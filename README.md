@@ -19,6 +19,7 @@ today. Editing, remote computers, notifications and installers are on the way.
 | One folder at a time | Search across every folder by name, program, account or description; filter by Running, Failed, Needs a look, Turned off, Never run |
 | "Run whether user is logged on or not" and "Do not store password" | What that means for this task, in a sentence |
 | Windows' own 200 tasks mixed in with yours | Hidden until you switch them on |
+| Columns you can't make wider | Drag column edges and headers, and the divider beside the preview; your layout is remembered |
 | Folders are the only way to arrange tasks, and moving one changes it | Star tasks and put them in your own groups (a task can be in several); kept by Schedulry, so the tasks themselves never change |
 
 ![Schedulry, dark theme, Windows' own tasks shown](docs/screenshots/windows-tasks-dark.png)

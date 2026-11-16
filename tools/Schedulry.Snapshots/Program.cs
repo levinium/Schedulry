@@ -39,6 +39,9 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         vm.SelectedRow = vm.Rows.FirstOrDefault();
     });
 
+    // A smaller laptop screen: names must still be readable.
+    Render($"main-1280-{suffix}", new DemoSchedulerHost(() => moment), vm =>
+        vm.SelectedRow = vm.Rows.First(r => r.Name == "Sync payroll exports"), width: 1280, height: 800);
     Render($"group-{suffix}", new DemoSchedulerHost(() => moment), vm =>
     {
         vm.SelectedCollection = vm.Collections.First(c => c.Title == "Overnight jobs");
@@ -56,12 +59,12 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
 Console.WriteLine($"Wrote snapshots to {output}");
 return 0;
 
-void Render(string name, DemoSchedulerHost host, Action<MainViewModel> arrange)
+void Render(string name, DemoSchedulerHost host, Action<MainViewModel> arrange, int width = 1440, int height = 900)
 {
     using var vm = new MainViewModel(host, clock: () => moment, organizer: new Schedulry.Core.MemoryOrganizerStore(DemoOrganizer.Sample()));
     vm.Monitor.Step();   // the first full read, raised inline
     arrange(vm);
-    var window = new MainWindow { Width = 1440, Height = 900, DataContext = vm };
+    var window = new MainWindow { Width = width, Height = height, DataContext = vm };
     window.Show();
     Settle();
     using var frame = window.CaptureRenderedFrame() ?? throw new InvalidOperationException($"No frame rendered for {name}");

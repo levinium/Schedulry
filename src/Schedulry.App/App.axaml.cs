@@ -26,6 +26,7 @@ public partial class App : Application
                 ? new MemoryOrganizerStore(DemoOrganizer.Sample())
                 : new JsonOrganizerStore(Path.Combine(Program.DataFolder, $"organize-{host.ComputerName.ToLowerInvariant()}.json"));
             var main = new MainViewModel(host, organizer: organizer);
+            Views.MainView.ColumnLayoutFile = Path.Combine(Program.DataFolder, "columns.json");
             var window = new MainWindow { DataContext = main };
 
             Platform.RestartAsAdmin = () =>

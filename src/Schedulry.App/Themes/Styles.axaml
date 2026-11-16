@@ -209,22 +209,40 @@
     <Setter Property="Foreground" Value="{DynamicResource NavSelectedFg}" />
   </Style>
 
-  <!-- Task rows -->
-  <Style Selector="ListBox.tasks">
+  <!-- The task table. A size smaller than the rest of the app, so names fit. Each cell's Border
+       fills the cell, so a row that just changed glows from edge to edge. -->
+  <Style Selector="DataGrid.tasks">
     <Setter Property="Background" Value="Transparent" />
+    <Setter Property="RowBackground" Value="Transparent" />
   </Style>
-  <Style Selector="ListBox.tasks ListBoxItem">
+  <Style Selector="DataGrid.tasks DataGridColumnHeader">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+    <Setter Property="Background" Value="{DynamicResource SubtleBg}" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="MinHeight" Value="34" />
+  </Style>
+  <Style Selector="DataGrid.tasks DataGridCell">
     <Setter Property="Padding" Value="0" />
-    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="BorderThickness" Value="0" />
   </Style>
-  <Style Selector="ListBox.tasks ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource RowHoverBg}" />
+  <Style Selector="DataGrid.tasks DataGridCell:focus /template/ Grid#FocusVisual">
+    <Setter Property="IsVisible" Value="False" />
   </Style>
-  <Style Selector="ListBox.tasks ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource RowSelectedBg}" />
+  <Style Selector="DataGrid.tasks DataGridRow">
+    <Setter Property="MinHeight" Value="44" />
   </Style>
-  <Style Selector="Border.taskRow">
-    <Setter Property="Padding" Value="16,9" />
+  <Style Selector="DataGrid.tasks DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+    <Setter Property="Fill" Value="{DynamicResource RowSelectedBg}" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="DataGrid.tasks DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle">
+    <Setter Property="Fill" Value="{DynamicResource RowHoverBg}" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="Border.cell">
+    <Setter Property="Padding" Value="10,6" />
     <Setter Property="BorderBrush" Value="{DynamicResource Divider}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
     <Setter Property="Background" Value="Transparent" />
@@ -234,10 +252,40 @@
       </Transitions>
     </Setter>
   </Style>
-  <Style Selector="Border.taskRow.fresh">
+  <Style Selector="Border.cell.fresh">
     <Setter Property="Background" Value="{DynamicResource FreshBg}" />
   </Style>
+  <Style Selector="Border.cell TextBlock">
+    <Setter Property="FontSize" Value="12.5" />
+  </Style>
+  <Style Selector="Border.cell TextBlock.muted">
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+  <Style Selector="Border.cell c|Chip">
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+  <Style Selector="Border.cell c|Chip TextBlock">
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+  <Style Selector="Border.cell Button.star">
+    <Setter Property="Padding" Value="2" />
+  </Style>
 
+  <!-- The divider between table and preview: invisible until pointed at, then a slim accent bar. -->
+  <Style Selector="GridSplitter.divider">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Width" Value="12" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="Transparent">
+          <Border Name="bar" Width="3" CornerRadius="2" Margin="0,40" Background="Transparent" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="GridSplitter.divider:pointerover /template/ Border#bar">
+    <Setter Property="Background" Value="{DynamicResource Accent}" />
+  </Style>
   <!-- Search box -->
   <Style Selector="TextBox.search">
     <Setter Property="CornerRadius" Value="6" />

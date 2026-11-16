@@ -5,6 +5,9 @@
        define the same keys (a test checks). -->
   <TransformOperations x:Key="HorizontalSmallScrollThumbScaleTransform">scaleY(0.5)</TransformOperations>
   <TransformOperations x:Key="VerticalSmallScrollThumbScaleTransform">scaleX(0.5)</TransformOperations>
+  <!-- Column headers reserve room for a sort arrow by default; the table sorts with "Sort by"
+       instead, and the reserve was cutting header names short ("Last R"). -->
+  <x:Double x:Key="DataGridSortIconMinWidth">0</x:Double>
 
   <ResourceDictionary.ThemeDictionaries>
 
