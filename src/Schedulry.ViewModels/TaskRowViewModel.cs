@@ -5,11 +5,11 @@ namespace Schedulry.ViewModels;
 
 /// <summary>
 /// One row of the task list. Updated in place when the task changes, so the row never jumps or
-/// loses its selection; it glows briefly to show what just changed.
+/// loses its selection. When a run starts or finishes, its status badge pulses briefly.
 /// </summary>
 public sealed partial class TaskRowViewModel : ObservableObject
 {
-    static readonly TimeSpan FreshFor = TimeSpan.FromSeconds(2.5);
+    static readonly TimeSpan FlashFor = TimeSpan.FromSeconds(2.5);
     DateTime? _changedAt;
 
     public TaskRowViewModel(TaskSnapshot task, DateTime now)
@@ -27,7 +27,8 @@ public sealed partial class TaskRowViewModel : ObservableObject
     [ObservableProperty] public partial string ResultShort { get; private set; } = "";
     [ObservableProperty] public partial ChipKind ResultKind { get; private set; }
     [ObservableProperty] public partial string NextRunText { get; private set; } = "";
-    [ObservableProperty] public partial bool IsFresh { get; private set; }
+    /// <summary>True for a moment after a run starts or finishes (the badge pulses); nothing else sets it.</summary>
+    [ObservableProperty] public partial bool IsFlashing { get; private set; }
     /// <summary>Starred by the person (kept by this app, not in Task Scheduler).</summary>
     [ObservableProperty] public partial bool IsStarred { get; set; }
 
@@ -46,9 +47,13 @@ public sealed partial class TaskRowViewModel : ObservableObject
     public void Update(TaskSnapshot task, DateTime now)
     {
         var definitionChanged = !Task.SameDefinition(task);
+        var runMoved = (Task.State == RunState.Running) != (task.State == RunState.Running) || Task.LastRun != task.LastRun;
         Task = task;
-        _changedAt = now;
-        IsFresh = true;
+        if (runMoved)
+        {
+            _changedAt = now;
+            IsFlashing = true;
+        }
         if (definitionChanged)
         {
             OnPropertyChanged(nameof(Name));
@@ -66,7 +71,9 @@ public sealed partial class TaskRowViewModel : ObservableObject
         IsRunning = task.State == RunState.Running;
         (StatusText, StatusKind) = task.State switch
         {
-            RunState.Running => ($"Running {When.Elapsed(now - (task.RunningSince ?? task.LastRun ?? now))}", ChipKind.Info),
+            // Just "Running": the time it's been going is in the Last Run column, where a long
+            // run ("2d 4h") has room and the badge keeps one width.
+            RunState.Running => ("Running", ChipKind.Info),
             RunState.Disabled => ("Turned off", ChipKind.Neutral),
             RunState.Queued => ("Queued", ChipKind.Warning),
             _ when !task.Enabled => ("Turned off", ChipKind.Neutral),
@@ -79,7 +86,7 @@ public sealed partial class TaskRowViewModel : ObservableObject
             },
         };
 
-        LastRunText = IsRunning ? $"Started {When.Ago(task.RunningSince ?? task.LastRun, now).ToLowerInvariant()}" : When.Ago(task.LastRun, now);
+        LastRunText = IsRunning ? $"Running for {When.Elapsed(now - (task.RunningSince ?? task.LastRun ?? now))}" : When.Ago(task.LastRun, now);
         if (IsRunning)
             (ResultText, ResultShort, ResultKind) = ("Running now", "Running now", ChipKind.Info);
         else if (task.LastResult is { } code && task.LastRun is not null)
@@ -100,9 +107,9 @@ public sealed partial class TaskRowViewModel : ObservableObject
             (ResultText, ResultShort, ResultKind) = ("Has not run yet", "Not run yet", ChipKind.Neutral);
 
         NextRunText = !task.Enabled ? "Turned off" : When.Until(task.NextRun, now);
-        if (_changedAt is { } at && now - at > FreshFor)
+        if (_changedAt is { } at && now - at > FlashFor)
         {
-            IsFresh = false;
+            IsFlashing = false;
             _changedAt = null;
         }
     }

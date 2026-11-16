@@ -181,8 +181,8 @@
               <DataGridTemplateColumn Header="Status" Tag="status" Width="128" MinWidth="124">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate x:DataType="vm:TaskRowViewModel">
-                    <Border Classes="cell" Classes.fresh="{Binding IsFresh}">
-                      <c:Chip Kind="{Binding StatusKind}" Content="{Binding StatusText}" />
+                    <Border Classes="cell">
+                      <c:Chip Kind="{Binding StatusKind}" Content="{Binding StatusText}" Classes.flash="{Binding IsFlashing}" />
                     </Border>
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
@@ -190,7 +190,7 @@
               <DataGridTemplateColumn Header="Task" Tag="task" Width="2.4*" MinWidth="150">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate x:DataType="vm:TaskRowViewModel">
-                    <Border Classes="cell" Classes.fresh="{Binding IsFresh}">
+                    <Border Classes="cell">
                       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                         <Button Classes="star" VerticalAlignment="Center" CommandParameter="{Binding}"
                                 Command="{Binding #TaskGrid.((vm:MainViewModel)DataContext).ToggleStarCommand}">
@@ -211,7 +211,7 @@
               <DataGridTemplateColumn Header="Schedule" Tag="schedule" Width="1.6*" MinWidth="100">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate x:DataType="vm:TaskRowViewModel">
-                    <Border Classes="cell" Classes.fresh="{Binding IsFresh}">
+                    <Border Classes="cell">
                       <TextBlock Classes="secondary" Text="{Binding ScheduleText}" TextWrapping="WrapWithOverflow" MaxLines="2" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                     </Border>
                   </DataTemplate>
@@ -220,7 +220,7 @@
               <DataGridTemplateColumn Header="Last Run" Tag="lastrun" Width="1*" MinWidth="88">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate x:DataType="vm:TaskRowViewModel">
-                    <Border Classes="cell" Classes.fresh="{Binding IsFresh}">
+                    <Border Classes="cell">
                       <TextBlock Classes="secondary" Text="{Binding LastRunText}" TextWrapping="WrapWithOverflow" MaxLines="2" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                     </Border>
                   </DataTemplate>
@@ -229,7 +229,7 @@
               <DataGridTemplateColumn Header="Last Result" Tag="result" Width="1*" MinWidth="96">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate x:DataType="vm:TaskRowViewModel">
-                    <Border Classes="cell" Classes.fresh="{Binding IsFresh}">
+                    <Border Classes="cell">
                       <TextBlock Classes="secondary" Text="{Binding ResultShort}" TextWrapping="WrapWithOverflow" MaxLines="2" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                     </Border>
                   </DataTemplate>
@@ -238,7 +238,7 @@
               <DataGridTemplateColumn Header="Next Run" Tag="nextrun" Width="1*" MinWidth="88">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate x:DataType="vm:TaskRowViewModel">
-                    <Border Classes="cell" Classes.fresh="{Binding IsFresh}">
+                    <Border Classes="cell">
                       <TextBlock Classes="secondary" Text="{Binding NextRunText}" TextWrapping="WrapWithOverflow" MaxLines="2" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                     </Border>
                   </DataTemplate>

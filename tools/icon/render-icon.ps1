@@ -1,5 +1,5 @@
 # Renders the Schedulry app icon, in the same family as Tenantry and Contactry: a midnight tile with
-# a 3x3 grid of cells (here read as a calendar), lit as an S. The centre cell is a clock face.
+# a 3x3 grid of cells (here read as a calendar), lit as an S.
 # Writes
 #   src/Schedulry.App/Assets/schedulry.ico       Windows executable and window icon (16-256 px)
 #   src/Schedulry.App/Assets/schedulry-256.png   in-app logo
@@ -53,8 +53,7 @@ function New-IconBitmap([int]$size) {
     # The whole stroke is bright (a fade made the ends blend into the unlit cells); unlit cells stay faint.
     $white = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
     $arm = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(215, 255, 255, 255))
-    $tip = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(150, 255, 255, 255))
-    $faint = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(45, 255, 255, 255))
+        $faint = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(45, 255, 255, 255))
     $cell = 0.17; $gap = 0.045; $origin = 0.2; $radius = $cell * 0.2
     $shades = @(
         @($faint, $arm, $arm),
@@ -67,20 +66,7 @@ function New-IconBitmap([int]$size) {
         }
     }
 
-    # Clock hands in the centre cell, in the tile's midnight colour. Dropped below 32 px, where
-    # they would only smudge the cell.
-    if ($size -ge 32) {
-        $cx = ($origin + $cell + $gap + $cell / 2) * $size
-        $cy = $cx
-        $handPen = New-Object System.Drawing.Pen ([System.Drawing.ColorTranslator]::FromHtml('#1A2140')), ([Math]::Max(1.5, $size * 0.022))
-        $handPen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-        $handPen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
-        $graphics.DrawLine($handPen, $cx, $cy, $cx, $cy - $cell * $size * 0.33)          # minute hand, to 12
-        $graphics.DrawLine($handPen, $cx, $cy, $cx + $cell * $size * 0.24, $cy)          # hour hand, to 3
-        $handPen.Dispose()
-    }
-
-    $white.Dispose(); $arm.Dispose(); $tip.Dispose(); $faint.Dispose(); $rimPen.Dispose(); $rim.Dispose(); $gradient.Dispose(); $tile.Dispose()
+    $white.Dispose(); $arm.Dispose(); $faint.Dispose(); $rimPen.Dispose(); $rim.Dispose(); $gradient.Dispose(); $tile.Dispose()
     $graphics.Dispose()
     return $bmp
 }

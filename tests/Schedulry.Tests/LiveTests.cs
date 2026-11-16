@@ -100,7 +100,7 @@ public class LiveTests
     }
 
     [Fact]
-    public void A_live_change_updates_the_row_in_place_and_glows()
+    public void A_finished_run_updates_the_row_in_place_and_pulses_its_badge()
     {
         using var vm = new MainViewModel(Host(), EveryTick, () => _now);
         vm.Monitor.Step();
@@ -112,12 +112,12 @@ public class LiveTests
         vm.Monitor.Step();
         Assert.Same(row, vm.Rows[index]);
         Assert.False(row.IsRunning);
-        Assert.True(row.IsFresh);
+        Assert.True(row.IsFlashing);
         Assert.Equal("Ready", row.StatusText);
 
-        _now = _now.AddSeconds(4);   // the glow fades
+        _now = _now.AddSeconds(4);   // the pulse is over
         vm.Monitor.Step();
-        Assert.False(row.IsFresh);
+        Assert.False(row.IsFlashing);
     }
 
     [Fact]

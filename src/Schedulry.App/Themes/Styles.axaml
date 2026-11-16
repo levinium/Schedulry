@@ -246,14 +246,22 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Divider}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Transitions">
-      <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.9" />
-      </Transitions>
-    </Setter>
   </Style>
-  <Style Selector="Border.cell.fresh">
-    <Setter Property="Background" Value="{DynamicResource FreshBg}" />
+  <!-- A run just started or finished: the status badge pulses twice, nothing else moves. -->
+  <Style Selector="c|Chip.flash">
+    <Style.Animations>
+      <Animation Duration="0:0:0.6" IterationCount="2" PlaybackDirection="Alternate" Easing="SineEaseInOut">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+        <KeyFrame Cue="50%">
+          <Setter Property="Opacity" Value="0.35" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
   </Style>
   <Style Selector="Border.cell TextBlock">
     <Setter Property="FontSize" Value="12.5" />

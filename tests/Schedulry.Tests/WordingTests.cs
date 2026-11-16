@@ -79,5 +79,7 @@ public class WordingTests
         Assert.Equal("Friday 6:00 AM", When.Until(now.Date.AddDays(2).AddHours(6), now));
         Assert.Equal("1:02:03", When.Elapsed(new TimeSpan(1, 2, 3)));
         Assert.Equal("0:42", When.Elapsed(TimeSpan.FromSeconds(42)));
+        Assert.Equal("2d 4h", When.Elapsed(new TimeSpan(2, 4, 13, 7)));
+        Assert.Equal("3d", When.Elapsed(TimeSpan.FromDays(3)));
     }
 }

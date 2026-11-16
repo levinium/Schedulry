@@ -489,7 +489,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                     break;
                 case ChangeKind.Added when !_rows.ContainsKey(change.Path):
                     var row = new TaskRowViewModel(change.Task!, now) { IsStarred = _organizer.IsStarred(change.Path) };
-                    row.Update(change.Task!, now);   // new rows glow too
                     _rows[change.Path] = row;
                     if (Visible(row.Task))
                         InsertSorted(row);

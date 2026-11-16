@@ -52,11 +52,13 @@ public static class When
         return $"{TriggerText.DateText(t)} {time}";
     }
 
-    /// <summary>A running time on a stopwatch: "0:42", "12:05", "1:02:33".</summary>
+    /// <summary>A running time on a stopwatch: "0:42", "12:05", "1:02:33"; past a day, "2d 4h".</summary>
     public static string Elapsed(TimeSpan span)
     {
         if (span < TimeSpan.Zero)
             span = TimeSpan.Zero;
+        if (span.TotalDays >= 1)
+            return span.Hours == 0 ? $"{(int)span.TotalDays}d" : $"{(int)span.TotalDays}d {span.Hours}h";
         return span.TotalHours >= 1
             ? $"{(int)span.TotalHours}:{span.Minutes:00}:{span.Seconds:00}"
             : $"{span.Minutes}:{span.Seconds:00}";

@@ -13,7 +13,7 @@ today. Editing, remote computers, notifications and installers are on the way.
 
 | Task Scheduler | Schedulry |
 |---|---|
-| Press F5 to see whether anything changed | The list is live: running tasks show a ticking timer, and rows glow briefly when they change |
+| Press F5 to see whether anything changed | The list is live: a running task shows how long it has been going, and its status badge pulses when a run starts or finishes |
 | `0x41301`, `0x800710E0`, `0x80070569` | "Still running", "Refused to start", "Sign-in refused: the account lacks the Log on as a batch job right", with what to do about it |
 | Triggers listed as separate rows in a dialog | "Every weekday at 6:00 AM, then every 2 minutes for 12 hours", plus the next five run times |
 | One folder at a time | Search across every folder by name, program, account or description; filter by Running, Failed, Needs a look, Turned off, Never run |
@@ -62,8 +62,7 @@ dotnet run --project tools/Schedulry.Snapshots -- snapshots-out
 
 ## Icon
 
-`tools/icon/render-icon.ps1` draws the icon (a grid read as a calendar, lit as an S, with a
-clock in the middle) and writes the `.ico` and PNGs into `src/Schedulry.App/Assets`.
+`tools/icon/render-icon.ps1` draws the icon (a grid read as a calendar, lit as an S) and writes the `.ico` and PNGs into `src/Schedulry.App/Assets`.
 
 ## Contributing: the leak guard
 
