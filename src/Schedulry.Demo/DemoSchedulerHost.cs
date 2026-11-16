@@ -53,6 +53,8 @@ public sealed class DemoSchedulerHost : ISchedulerHost
     public string CurrentUser => @"CONTOSO\avery.lee";
     public bool HistoryEnabled { get; set; }
 
+    public bool RecheckHistory() => HistoryEnabled;
+
     public event Action<string>? TaskEvent
     {
         add { }

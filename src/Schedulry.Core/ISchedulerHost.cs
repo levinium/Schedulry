@@ -41,6 +41,12 @@ public interface ISchedulerHost : IDisposable
     bool HistoryEnabled { get; }
 
     /// <summary>
+    /// Asks Windows again now, rather than trusting a recent answer: right after the history log
+    /// was turned on, so the app and the host agree straight away.
+    /// </summary>
+    bool RecheckHistory();
+
+    /// <summary>
     /// Raised from any thread with a task's path when the history log records something about it
     /// (started, finished, changed, deleted). Never raised while the history log is off.
     /// </summary>

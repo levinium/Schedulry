@@ -147,6 +147,12 @@ public sealed class WindowsSchedulerHost : ISchedulerHost
         }
     }
 
+    public bool RecheckHistory()
+    {
+        _historyCheckedAt = DateTime.MinValue;
+        return HistoryEnabled;
+    }
+
     EventLogSession Session() => _computer is null ? new EventLogSession() : new EventLogSession(_computer);
 
     /// <summary>Follows the history log while it's on, so starts, finishes and edits show at once.</summary>

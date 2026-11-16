@@ -279,7 +279,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             BannerProblem = "Task history is still off.";
             return;
         }
-        HistoryEnabled = true;
+        // The host caches its answer for a few seconds; ask it afresh so the next tick agrees and
+        // the banner doesn't come back for a moment.
+        var on = true;
+        await Platform.Background(() =>
+        {
+            on = Host.RecheckHistory();
+            return Task.CompletedTask;
+        });
+        HistoryEnabled = on;
         Monitor.Poke();
     }
 
