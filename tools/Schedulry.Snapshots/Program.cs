@@ -39,6 +39,12 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         vm.SelectedRow = vm.Rows.FirstOrDefault();
     });
 
+    Render($"group-{suffix}", new DemoSchedulerHost(() => moment), vm =>
+    {
+        vm.SelectedCollection = vm.Collections.First(c => c.Title == "Overnight jobs");
+        vm.SelectedRow = vm.Rows.First(r => r.Name == "Mirror data to NAS");
+    });
+
     Render($"windows-tasks-{suffix}", new DemoSchedulerHost(() => moment, elevated: true, historyEnabled: true), vm =>
     {
         vm.ShowWindowsTasks = true;
@@ -52,7 +58,7 @@ return 0;
 
 void Render(string name, DemoSchedulerHost host, Action<MainViewModel> arrange)
 {
-    using var vm = new MainViewModel(host, clock: () => moment);
+    using var vm = new MainViewModel(host, clock: () => moment, organizer: new Schedulry.Core.MemoryOrganizerStore(DemoOrganizer.Sample()));
     vm.Monitor.Step();   // the first full read, raised inline
     arrange(vm);
     var window = new MainWindow { Width = 1440, Height = 900, DataContext = vm };

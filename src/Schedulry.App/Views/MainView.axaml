@@ -101,6 +101,36 @@
                 </DataTemplate>
               </ListBox.ItemTemplate>
             </ListBox>
+            <TextBlock Classes="section" Text="MY TASKS" />
+            <ListBox Classes="nav" ItemsSource="{Binding Collections}" SelectedItem="{Binding SelectedCollection}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:CollectionItem">
+                  <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,0,0,0">
+                    <ic:FluentIcon Icon="Star" IconVariant="Filled" FontSize="14" Margin="0,0,7,0" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource BadgeWarningDot}" IsVisible="{Binding IsStarredList}" />
+                    <ic:FluentIcon Icon="Collections" FontSize="14" Margin="0,0,7,0" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextMuted}" IsVisible="{Binding IsGroup}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" Classes="muted" Text="{Binding Count}" Margin="6,0,10,0" VerticalAlignment="Center" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <Button Classes="neutral small" Margin="12,4,12,0" HorizontalAlignment="Left" Command="{Binding StartNewGroupCommand}"
+                    IsVisible="{Binding !IsCreatingGroup}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <ic:FluentIcon Icon="Add" FontSize="12" />
+                <TextBlock Text="New Group" />
+              </StackPanel>
+            </Button>
+            <StackPanel Margin="12,4,12,0" Spacing="6" IsVisible="{Binding IsCreatingGroup}">
+              <TextBox Text="{Binding NewGroupName}" Watermark="Group name, such as Backups" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Classes="primary small" Content="Create" Command="{Binding CreateGroupCommand}" IsDefault="True" />
+                <Button Classes="neutral small" Content="Cancel" Command="{Binding CancelNewGroupCommand}" />
+              </StackPanel>
+            </StackPanel>
+
             <TextBlock Classes="section" Text="FOLDERS" />
             <ListBox Classes="nav" ItemsSource="{Binding Folders}" SelectedItem="{Binding SelectedFolder}">
               <ListBox.ItemTemplate>
@@ -119,8 +149,31 @@
 
       <!-- The live list -->
       <Border Grid.Column="1" Classes="card" ClipToBounds="True">
-        <Grid RowDefinitions="Auto,*">
-          <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,0,0,1" Padding="16,10" Background="{DynamicResource SubtleBg}" CornerRadius="10,10,0,0">
+        <Grid RowDefinitions="Auto,Auto,*">
+          <!-- What the list shows, with the group's own tools when a group is showing. -->
+          <Grid ColumnDefinitions="*,Auto" Margin="16,12,12,10" MinHeight="32">
+            <TextBlock Text="{Binding ScopeTitle}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowGroupTools}">
+              <Button Classes="neutral small" Content="Rename Group" Command="{Binding StartRenameCommand}" />
+              <Button Classes="neutral small" Content="Delete Group" Command="{Binding AskDeleteGroupCommand}" />
+            </StackPanel>
+            <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsRenamingGroup}">
+              <TextBox Text="{Binding RenameText}" Width="260" />
+              <Button Classes="primary small" Content="Save" Command="{Binding SaveRenameCommand}" IsDefault="True" />
+              <Button Classes="neutral small" Content="Cancel" Command="{Binding CancelRenameCommand}" />
+            </StackPanel>
+            <Border Grid.ColumnSpan="2" Classes="banner info" Padding="12,6" IsVisible="{Binding IsConfirmingDelete}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <TextBlock Text="{Binding DeleteQuestion}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                  <Button Classes="danger small" Content="Delete Group" Command="{Binding ConfirmDeleteGroupCommand}" />
+                  <Button Classes="neutral small" Content="Keep It" Command="{Binding CancelDeleteGroupCommand}" />
+                </StackPanel>
+              </Grid>
+            </Border>
+          </Grid>
+
+          <Border Grid.Row="1" BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,1" Padding="16,10" Background="{DynamicResource SubtleBg}">
             <Grid ColumnDefinitions="118,2*,1.7*,132,1.5*,140" ColumnSpacing="12">
               <TextBlock Classes="columnHeader" Text="Status" />
               <TextBlock Classes="columnHeader" Grid.Column="1" Text="Task" />
@@ -131,16 +184,25 @@
             </Grid>
           </Border>
 
-          <ListBox Grid.Row="1" Classes="tasks" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}">
+          <ListBox Grid.Row="2" Classes="tasks" Name="TaskList" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:TaskRowViewModel">
                 <Border Classes="taskRow" Classes.fresh="{Binding IsFresh}">
                   <Grid ColumnDefinitions="118,2*,1.7*,132,1.5*,140" ColumnSpacing="12">
                     <c:Chip Kind="{Binding StatusKind}" Content="{Binding StatusText}" />
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Classes="muted" FontSize="12" Text="{Binding Folder}" TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
+                    <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                      <Button Classes="star" VerticalAlignment="Center" CommandParameter="{Binding}"
+                              Command="{Binding #TaskList.((vm:MainViewModel)DataContext).ToggleStarCommand}">
+                        <Panel>
+                          <ic:FluentIcon Icon="Star" IconVariant="Filled" FontSize="16" Foreground="{DynamicResource BadgeWarningDot}" IsVisible="{Binding IsStarred}" />
+                          <ic:FluentIcon Icon="Star" FontSize="16" Foreground="{DynamicResource TextMuted}" IsVisible="{Binding !IsStarred}" />
+                        </Panel>
+                      </Button>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Classes="muted" FontSize="12" Text="{Binding Folder}" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Grid>
                     <TextBlock Grid.Column="2" Classes="secondary" Text="{Binding ScheduleText}" TextWrapping="WrapWithOverflow" MaxLines="2"
                                TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="3" Classes="secondary" Text="{Binding LastRunText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -153,11 +215,11 @@
             </ListBox.ItemTemplate>
           </ListBox>
 
-          <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" IsVisible="{Binding IsLoading}">
+          <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" IsVisible="{Binding IsLoading}">
             <ProgressBar IsIndeterminate="True" Width="200" />
             <TextBlock Classes="secondary" Text="Reading tasks…" HorizontalAlignment="Center" />
           </StackPanel>
-          <TextBlock Grid.Row="1" Classes="secondary" Text="{Binding EmptyText}" IsVisible="{Binding IsEmpty}" TextWrapping="Wrap"
+          <TextBlock Grid.Row="2" Classes="secondary" Text="{Binding EmptyText}" IsVisible="{Binding IsEmpty}" TextWrapping="Wrap"
                      MaxWidth="420" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Grid>
       </Border>
@@ -193,6 +255,15 @@
                         </StackPanel>
                       </Button>
                       <Button Classes="neutral" Content="Turn Off" Command="{Binding TurnOffCommand}" IsVisible="{Binding Row.Task.Enabled}" />
+                      <Button Classes="neutral" Command="{Binding ToggleStarCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <Panel>
+                            <ic:FluentIcon Icon="Star" IconVariant="Filled" FontSize="14" Foreground="{DynamicResource BadgeWarningDot}" IsVisible="{Binding Row.IsStarred}" />
+                            <ic:FluentIcon Icon="Star" FontSize="14" IsVisible="{Binding !Row.IsStarred}" />
+                          </Panel>
+                          <TextBlock Text="{Binding StarText}" />
+                        </StackPanel>
+                      </Button>
                       <Button Content="Turn On" Command="{Binding TurnOnCommand}" IsVisible="{Binding !Row.Task.Enabled}" />
                     </WrapPanel>
                     <TextBlock Classes="muted" FontSize="12" Text="{Binding ActionNote}" IsVisible="{Binding HasActionNote}" TextWrapping="Wrap" Margin="0,8,0,0" />
@@ -201,6 +272,40 @@
                     </Border>
 
                     <Border Classes="detailSection" Margin="0,16,0,0">
+                      <StackPanel Spacing="6">
+                        <TextBlock Classes="h2" Text="Groups" />
+                        <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding !HasGroups}"
+                                   Text="Not in any of your groups. Groups are kept by Schedulry only; the task itself doesn't change." />
+                        <ItemsControl ItemsSource="{Binding Groups}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <WrapPanel ItemSpacing="6" LineSpacing="6" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CollectionItem">
+                              <Border Background="{DynamicResource BadgeNeutralBg}" BorderBrush="{DynamicResource BadgeNeutralBorder}" BorderThickness="1"
+                                      CornerRadius="12" Padding="10,2,4,2">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                  <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                  <Button Classes="chipRemove" CommandParameter="{Binding}"
+                                          Command="{Binding $parent[ItemsControl].((vm:TaskDetailViewModel)DataContext).RemoveFromGroupCommand}">
+                                    <ic:FluentIcon Icon="Dismiss" FontSize="10" />
+                                  </Button>
+                                </StackPanel>
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                          <AutoCompleteBox Text="{Binding GroupNameText}" ItemsSource="{Binding GroupNames}" FilterMode="ContainsOrdinal"
+                                           MinimumPrefixLength="0" Watermark="A group's name, new or existing" />
+                          <Button Grid.Column="1" Content="Add to Group" Command="{Binding AddToGroupCommand}" />
+                        </Grid>
+                      </StackPanel>
+                    </Border>
+
+                    <Border Classes="detailSection">
                       <StackPanel Spacing="3">
                         <TextBlock Classes="h2" Text="Last Run" />
                         <TextBlock Text="{Binding ResultTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />

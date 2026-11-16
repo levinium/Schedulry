@@ -19,10 +19,13 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             Platform.Post = action => Dispatcher.UIThread.Post(action);
-            ISchedulerHost host = Program.Args.Contains("--demo", StringComparer.OrdinalIgnoreCase)
-                ? new DemoSchedulerHost()
-                : new WindowsSchedulerHost();
-            var main = new MainViewModel(host);
+            var demo = Program.Args.Contains("--demo", StringComparer.OrdinalIgnoreCase);
+            ISchedulerHost host = demo ? new DemoSchedulerHost() : new WindowsSchedulerHost();
+            // Stars and groups: one file per computer, so a remote computer later gets its own.
+            IOrganizerStore organizer = demo
+                ? new MemoryOrganizerStore(DemoOrganizer.Sample())
+                : new JsonOrganizerStore(Path.Combine(Program.DataFolder, $"organize-{host.ComputerName.ToLowerInvariant()}.json"));
+            var main = new MainViewModel(host, organizer: organizer);
             var window = new MainWindow { DataContext = main };
 
             Platform.RestartAsAdmin = () =>

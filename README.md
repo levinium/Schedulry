@@ -6,7 +6,7 @@ pressing Refresh, and it says what each task does in plain words.
 
 ![Schedulry, light theme](docs/screenshots/main-light.png)
 
-**Status: early development.** Browsing, live status, Run, End and turning tasks on or off work
+**Status: early development.** Browsing, live status, stars and groups, Run, End and turning tasks on or off work
 today. Editing, remote computers, notifications and installers are on the way.
 
 ## What it does differently
@@ -19,8 +19,11 @@ today. Editing, remote computers, notifications and installers are on the way.
 | One folder at a time | Search across every folder by name, program, account or description; filter by Running, Failed, Needs a look, Turned off, Never run |
 | "Run whether user is logged on or not" and "Do not store password" | What that means for this task, in a sentence |
 | Windows' own 200 tasks mixed in with yours | Hidden until you switch them on |
+| Folders are the only way to arrange tasks, and moving one changes it | Star tasks and put them in your own groups (a task can be in several); kept by Schedulry, so the tasks themselves never change |
 
 ![Schedulry, dark theme, Windows' own tasks shown](docs/screenshots/windows-tasks-dark.png)
+
+![Schedulry, a group of the person's own](docs/screenshots/group-light.png)
 
 ## Running it
 

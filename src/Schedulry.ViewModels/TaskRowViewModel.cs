@@ -28,6 +28,8 @@ public sealed partial class TaskRowViewModel : ObservableObject
     [ObservableProperty] public partial ChipKind ResultKind { get; private set; }
     [ObservableProperty] public partial string NextRunText { get; private set; } = "";
     [ObservableProperty] public partial bool IsFresh { get; private set; }
+    /// <summary>Starred by the person (kept by this app, not in Task Scheduler).</summary>
+    [ObservableProperty] public partial bool IsStarred { get; set; }
 
     public string Path => Task.Path;
     public string Name => Task.Name;

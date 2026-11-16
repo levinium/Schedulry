@@ -24,6 +24,22 @@ public sealed partial class FolderItem(string path, int depth) : ObservableObjec
     [ObservableProperty] public partial int Count { get; set; }
 }
 
+/// <summary>"Starred" (no group) or one of the person's own groups, in the sidebar's My Tasks section.</summary>
+public sealed partial class CollectionItem : ObservableObject
+{
+    public CollectionItem(TaskGroup? group)
+    {
+        Group = group;
+        Title = group?.Name ?? "Starred";
+    }
+
+    public TaskGroup? Group { get; }
+    public bool IsStarredList => Group is null;
+    public bool IsGroup => Group is not null;
+    [ObservableProperty] public partial string Title { get; set; }
+    [ObservableProperty] public partial int Count { get; set; }
+}
+
 public enum SortField
 {
     Name,
@@ -43,11 +59,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 {
     readonly Dictionary<string, TaskRowViewModel> _rows = new(StringComparer.OrdinalIgnoreCase);
     readonly Func<DateTime> _clock;
+    readonly IOrganizerStore _store;
+    readonly OrganizerData _organizer;
 
-    public MainViewModel(ISchedulerHost host, MonitorTiming? timing = null, Func<DateTime>? clock = null)
+    public MainViewModel(ISchedulerHost host, MonitorTiming? timing = null, Func<DateTime>? clock = null, IOrganizerStore? organizer = null)
     {
         Host = host;
         _clock = clock ?? (() => DateTime.Now);
+        _store = organizer ?? new MemoryOrganizerStore();
+        _organizer = _store.Load();
+        RebuildCollections();
         Monitor = new LiveMonitor(host, timing);
         IsElevated = host.IsElevated;
         CurrentUser = host.CurrentUser;
@@ -87,6 +108,30 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<ViewItem> Views { get; }
     public ObservableCollection<FolderItem> Folders { get; } = [];
+    public ObservableCollection<CollectionItem> Collections { get; } = [];
+    [ObservableProperty] public partial CollectionItem? SelectedCollection { get; set; }
+
+    // Making, renaming and deleting groups happens inline, in the sidebar and above the list.
+    [ObservableProperty] public partial bool IsCreatingGroup { get; set; }
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateGroupCommand))] public partial string NewGroupName { get; set; } = "";
+    [ObservableProperty] public partial bool IsRenamingGroup { get; set; }
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveRenameCommand))] public partial string RenameText { get; set; } = "";
+    [ObservableProperty] public partial bool IsConfirmingDelete { get; set; }
+
+    /// <summary>What the list is showing, above its columns: "Starred", a group, a folder, "All tasks".</summary>
+    public string ScopeTitle
+    {
+        get
+        {
+            var scope = SelectedCollection?.Title
+                ?? (SelectedFolder is { Path: not "\\" } folder ? folder.Path : "All tasks");
+            return SelectedView.Key == "all" ? scope : $"{scope} · {SelectedView.Title}";
+        }
+    }
+
+    public bool ShowGroupTools => SelectedCollection?.IsGroup == true && !IsRenamingGroup && !IsConfirmingDelete;
+    public string DeleteQuestion => $"Delete the group \"{SelectedCollection?.Title}\"? Its tasks stay exactly as they are.";
+    public IReadOnlyList<string> GroupNames => _organizer.Groups.Select(g => g.Name).Order(StringComparer.CurrentCultureIgnoreCase).ToList();
     public ObservableCollection<TaskRowViewModel> Rows { get; } = [];
     public IReadOnlyList<SortOption> SortOptions { get; }
 
@@ -127,11 +172,50 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
     partial void OnLiveProblemChanged(string? value) => OnPropertyChanged(nameof(HasLiveProblem));
     partial void OnBannerProblemChanged(string? value) => OnPropertyChanged(nameof(HasBannerProblem));
-    partial void OnSelectedViewChanged(ViewItem value) => RebuildRows();
+    partial void OnSelectedViewChanged(ViewItem value)
+    {
+        RebuildRows();
+        OnPropertyChanged(nameof(ScopeTitle));
+    }
+
+    // A folder and a My Tasks list are two kinds of place: choosing one clears the other.
     partial void OnSelectedFolderChanged(FolderItem? value)
     {
-        if (!_quietFolder && value is not null)
-            RebuildRows();
+        if (_quietFolder)
+            return;
+        if (value is not null && SelectedCollection is not null)
+        {
+            _quietCollection = true;
+            SelectedCollection = null;
+            _quietCollection = false;
+        }
+        RebuildRows();
+        NotifyScope();
+    }
+
+    partial void OnSelectedCollectionChanged(CollectionItem? value)
+    {
+        IsRenamingGroup = false;
+        IsConfirmingDelete = false;
+        if (_quietCollection)
+            return;
+        _quietFolder = true;
+        SelectedFolder = value is null ? Folders.FirstOrDefault() : null;
+        _quietFolder = false;
+        RebuildRows();
+        NotifyScope();
+    }
+
+    partial void OnIsRenamingGroupChanged(bool value) => OnPropertyChanged(nameof(ShowGroupTools));
+    partial void OnIsConfirmingDeleteChanged(bool value) => OnPropertyChanged(nameof(ShowGroupTools));
+
+    bool _quietCollection;
+
+    void NotifyScope()
+    {
+        OnPropertyChanged(nameof(ScopeTitle));
+        OnPropertyChanged(nameof(ShowGroupTools));
+        OnPropertyChanged(nameof(DeleteQuestion));
     }
     partial void OnSearchTextChanged(string value) => RebuildRows();
     partial void OnSelectedSortChanged(SortOption value) => RebuildRows();
@@ -187,12 +271,198 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     void DismissHistoryBanner() => HistoryBannerDismissed = true;
 
+    // ---- Stars and groups ----
+
+    [RelayCommand]
+    public void ToggleStar(TaskRowViewModel? row)
+    {
+        if (row is null)
+            return;
+        row.IsStarred = !row.IsStarred;
+        _organizer.SetStarred(row.Path, row.IsStarred);
+        OrganizerChanged(row);
+    }
+
+    [RelayCommand]
+    void StartNewGroup()
+    {
+        NewGroupName = "";
+        IsCreatingGroup = true;
+    }
+
+    [RelayCommand]
+    void CancelNewGroup() => IsCreatingGroup = false;
+
+    bool CanCreateGroup() => NewGroupName.Trim().Length > 0;
+
+    [RelayCommand(CanExecute = nameof(CanCreateGroup))]
+    void CreateGroup()
+    {
+        var item = FindOrCreateGroup(NewGroupName);
+        IsCreatingGroup = false;
+        SelectedCollection = item;
+    }
+
+    /// <summary>The group with this name (any case), made if there isn't one yet.</summary>
+    public CollectionItem FindOrCreateGroup(string name)
+    {
+        name = name.Trim();
+        var group = _organizer.Groups.FirstOrDefault(g => string.Equals(g.Name, name, StringComparison.CurrentCultureIgnoreCase));
+        if (group is null)
+        {
+            group = new TaskGroup { Name = name };
+            _organizer.Groups.Add(group);
+            Save();
+            RebuildCollections();
+        }
+        return Collections.First(c => c.Group == group);
+    }
+
+    /// <summary>Adds a task to a group by name (made if new). Used by the preview's "Add to Group".</summary>
+    public void AddToGroup(TaskRowViewModel row, string groupName)
+    {
+        var item = FindOrCreateGroup(groupName);
+        item.Group!.Add(row.Path);
+        OrganizerChanged(row);
+    }
+
+    public void RemoveFromGroup(TaskRowViewModel row, TaskGroup group)
+    {
+        group.Remove(row.Path);
+        OrganizerChanged(row);
+    }
+
+    /// <summary>The groups a task is in, by name.</summary>
+    public IReadOnlyList<CollectionItem> GroupsOf(string path) =>
+        Collections.Where(c => c.Group?.Contains(path) == true).ToList();
+
+    [RelayCommand]
+    void StartRename()
+    {
+        RenameText = SelectedCollection?.Title ?? "";
+        IsRenamingGroup = true;
+    }
+
+    [RelayCommand]
+    void CancelRename() => IsRenamingGroup = false;
+
+    bool CanSaveRename() => RenameText.Trim().Length > 0;
+
+    [RelayCommand(CanExecute = nameof(CanSaveRename))]
+    void SaveRename()
+    {
+        if (SelectedCollection is not { Group: { } group } item)
+            return;
+        var name = RenameText.Trim();
+        var other = _organizer.Groups.FirstOrDefault(g => g != group && string.Equals(g.Name, name, StringComparison.CurrentCultureIgnoreCase));
+        if (other is not null)
+        {
+            // Same name as another group: the two become one.
+            foreach (var path in group.Paths)
+                other.Add(path);
+            _organizer.Groups.Remove(group);
+            Save();
+            RebuildCollections();
+            SelectedCollection = Collections.First(c => c.Group == other);
+        }
+        else
+        {
+            group.Name = name;
+            item.Title = name;
+            Save();
+            RebuildCollections();
+            SelectedCollection = Collections.First(c => c.Group == group);
+        }
+        IsRenamingGroup = false;
+        NotifyScope();
+        Detail?.RefreshGroups();
+    }
+
+    [RelayCommand]
+    void AskDeleteGroup() => IsConfirmingDelete = true;
+
+    [RelayCommand]
+    void CancelDeleteGroup() => IsConfirmingDelete = false;
+
+    [RelayCommand]
+    void ConfirmDeleteGroup()
+    {
+        if (SelectedCollection?.Group is not { } group)
+            return;
+        _organizer.Groups.Remove(group);
+        Save();
+        IsConfirmingDelete = false;
+        RebuildCollections();
+        SelectedCollection = null;
+        Detail?.RefreshGroups();
+    }
+
+    void OrganizerChanged(TaskRowViewModel row)
+    {
+        Save();
+        RebuildCollectionCounts();
+        OnPropertyChanged(nameof(GroupNames));
+        // In Starred or a group, a task taken out leaves the list (unless it's the one being looked at).
+        var visible = Visible(row.Task);
+        var listed = Rows.Contains(row);
+        if (visible && !listed)
+            InsertSorted(row);
+        else if (!visible && listed && SelectedRow != row)
+            Rows.Remove(row);
+        if (Detail?.Row == row)
+            Detail.RefreshGroups();
+        UpdateEmptyText();
+    }
+
+    void Save()
+    {
+        try
+        {
+            _store.Save(_organizer);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            BannerProblem = $"Couldn't save your stars and groups: {e.Message}";
+        }
+    }
+
+    void RebuildCollections()
+    {
+        var selected = SelectedCollection;
+        var items = new List<CollectionItem> { new(null) };
+        items.AddRange(_organizer.Groups.OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase).Select(g => new CollectionItem(g)));
+        _quietCollection = true;
+        Collections.Clear();
+        foreach (var item in items)
+            Collections.Add(item);
+        SelectedCollection = selected is null ? null
+            : Collections.FirstOrDefault(c => c.Group == selected.Group);
+        _quietCollection = false;
+        // The list on show went away (a deleted group): back to all tasks.
+        if (selected is not null && SelectedCollection is null)
+        {
+            _quietFolder = true;
+            SelectedFolder = Folders.FirstOrDefault();
+            _quietFolder = false;
+            RebuildRows();
+            NotifyScope();
+        }
+        RebuildCollectionCounts();
+        OnPropertyChanged(nameof(GroupNames));
+    }
+
+    void RebuildCollectionCounts()
+    {
+        foreach (var item in Collections)
+            item.Count = _rows.Keys.Count(path => InCollection(item, path));
+    }
+
     void OnLoaded(IReadOnlyList<TaskSnapshot> tasks)
     {
         var now = _clock();
         _rows.Clear();
         foreach (var task in tasks)
-            _rows[task.Path] = new TaskRowViewModel(task, now);
+            _rows[task.Path] = new TaskRowViewModel(task, now) { IsStarred = _organizer.IsStarred(task.Path) };
         IsLoading = false;
         RebuildFolders();
         RebuildCounts();
@@ -218,7 +488,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                     }
                     break;
                 case ChangeKind.Added when !_rows.ContainsKey(change.Path):
-                    var row = new TaskRowViewModel(change.Task!, now);
+                    var row = new TaskRowViewModel(change.Task!, now) { IsStarred = _organizer.IsStarred(change.Path) };
                     row.Update(change.Task!, now);   // new rows glow too
                     _rows[change.Path] = row;
                     if (Visible(row.Task))
@@ -268,9 +538,21 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     bool InScope(TaskSnapshot task) => ShowWindowsTasks || !task.IsWindowsTask;
 
+    bool InCollection(CollectionItem collection, string path) =>
+        collection.Group is { } group ? group.Contains(path) : _organizer.IsStarred(path);
+
     bool Visible(TaskSnapshot task)
     {
-        if (!InScope(task) || !SelectedView.Match(task))
+        if (!SelectedView.Match(task))
+            return false;
+        // A starred or grouped Windows task is shown in its list even while Windows tasks are hidden:
+        // putting it there was a choice to see it.
+        if (SelectedCollection is { } collection)
+        {
+            if (!InCollection(collection, task.Path))
+                return false;
+        }
+        else if (!InScope(task))
             return false;
         if (SelectedFolder is { Path: not "\\" } folder
             && !string.Equals(task.Folder, folder.Path, StringComparison.OrdinalIgnoreCase)
@@ -347,6 +629,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Folders.Clear();
         foreach (var path in ordered)
             Folders.Add(new FolderItem(path, path == "\\" ? 0 : path.Count(c => c == '\\') - 1) { Count = counts[path] });
+        // While Starred or a group is showing, no folder is selected.
+        if (SelectedCollection is not null)
+        {
+            _quietFolder = true;
+            SelectedFolder = null;
+            _quietFolder = false;
+            return;
+        }
         // The same folder (by path) is re-selected quietly: the filter hasn't changed, so the list stays.
         var restored = Folders.FirstOrDefault(f => string.Equals(f.Path, selectedPath, StringComparison.OrdinalIgnoreCase)) ?? Folders[0];
         var samePath = string.Equals(restored.Path, selectedPath, StringComparison.OrdinalIgnoreCase);
@@ -362,6 +652,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var tasks = _rows.Values.Select(r => r.Task).Where(InScope).ToList();
         foreach (var view in Views)
             view.Count = tasks.Count(view.Match);
+        RebuildCollectionCounts();
     }
 
     void UpdateEmptyText()
@@ -372,6 +663,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
         EmptyText = SearchText.Trim().Length > 0 ? $"No tasks match \"{SearchText.Trim()}\". Clear the search to see them all."
+            : SelectedCollection is { IsStarredList: true } && SelectedView.Key == "all"
+                ? "No starred tasks yet. Select the star on a task's row, or Star in its preview, to keep it here."
+            : SelectedCollection is { IsGroup: true } && SelectedView.Key == "all"
+                ? "This group is empty. Open a task and use Add to Group in its preview to put it here."
             : SelectedView.Key switch
             {
                 "running" => "Nothing is running right now. Tasks appear here the moment they start.",

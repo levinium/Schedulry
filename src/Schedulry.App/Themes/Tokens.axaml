@@ -76,6 +76,8 @@
       <SolidColorBrush x:Key="BannerErrorBg" Color="#FDE2E1" />
       <SolidColorBrush x:Key="BannerInfoBg" Color="#FFF5DB" />
       <SolidColorBrush x:Key="BannerNoteBg" Color="#E6ECFD" />
+      <SolidColorBrush x:Key="DangerFill" Color="#8A1C2C" />
+      <SolidColorBrush x:Key="DangerFillHover" Color="#741726" />
 
       <SolidColorBrush x:Key="ScrollThumb" Color="#B9BFC8" />
       <SolidColorBrush x:Key="ScrollThumbHover" Color="#8D95A1" />
@@ -146,6 +148,8 @@
       <SolidColorBrush x:Key="BannerErrorBg" Color="#47191C" />
       <SolidColorBrush x:Key="BannerInfoBg" Color="#3A2F14" />
       <SolidColorBrush x:Key="BannerNoteBg" Color="#222C47" />
+      <SolidColorBrush x:Key="DangerFill" Color="#8A2433" />
+      <SolidColorBrush x:Key="DangerFillHover" Color="#9C2A3B" />
 
       <SolidColorBrush x:Key="ScrollThumb" Color="#4A4F58" />
       <SolidColorBrush x:Key="ScrollThumbHover" Color="#6B717C" />

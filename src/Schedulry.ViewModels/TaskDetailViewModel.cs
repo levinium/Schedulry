@@ -22,6 +22,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject, IDisposable
         _shell = shell;
         row.PropertyChanged += OnRowChanged;
         Rebuild();
+        RefreshGroups();
         _ = LoadNextRunsAsync();
     }
 
@@ -43,6 +44,47 @@ public sealed partial class TaskDetailViewModel : ObservableObject, IDisposable
     [ObservableProperty] public partial string? Problem { get; private set; }
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(EndCommand), nameof(TurnOnCommand), nameof(TurnOffCommand))]
     public partial bool Busy { get; private set; }
+
+    // ---- Stars and groups (this app's own; Task Scheduler isn't touched) ----
+
+    [ObservableProperty] public partial IReadOnlyList<CollectionItem> Groups { get; private set; } = [];
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(AddToGroupCommand))] public partial string GroupNameText { get; set; } = "";
+    public IReadOnlyList<string> GroupNames => _shell.GroupNames;
+    public bool HasGroups => Groups.Count > 0;
+    public string StarText => Row.IsStarred ? "Starred" : "Star";
+
+    partial void OnGroupsChanged(IReadOnlyList<CollectionItem> value) => OnPropertyChanged(nameof(HasGroups));
+
+    [RelayCommand]
+    void ToggleStar()
+    {
+        _shell.ToggleStar(Row);
+        OnPropertyChanged(nameof(StarText));
+    }
+
+    bool CanAddToGroup() => GroupNameText.Trim().Length > 0;
+
+    /// <summary>Adds to the named group, making it when the name is new.</summary>
+    [RelayCommand(CanExecute = nameof(CanAddToGroup))]
+    void AddToGroup()
+    {
+        _shell.AddToGroup(Row, GroupNameText);
+        GroupNameText = "";
+    }
+
+    [RelayCommand]
+    void RemoveFromGroup(CollectionItem? item)
+    {
+        if (item?.Group is { } group)
+            _shell.RemoveFromGroup(Row, group);
+    }
+
+    public void RefreshGroups()
+    {
+        Groups = _shell.GroupsOf(Row.Path);
+        OnPropertyChanged(nameof(GroupNames));
+        OnPropertyChanged(nameof(StarText));
+    }
 
     public string? Description => Task.Description;
     public bool HasDescription => !string.IsNullOrWhiteSpace(Task.Description);
@@ -106,6 +148,8 @@ public sealed partial class TaskDetailViewModel : ObservableObject, IDisposable
 
     void OnRowChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(TaskRowViewModel.IsStarred))
+            OnPropertyChanged(nameof(StarText));
         if (e.PropertyName != nameof(TaskRowViewModel.Task))
             return;
         Rebuild();
