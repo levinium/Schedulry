@@ -1,0 +1,290 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Schedulry.ViewModels"
+             xmlns:c="using:Schedulry.App.Controls"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="Schedulry.App.Views.MainView"
+             x:DataType="vm:MainViewModel">
+
+  <Grid RowDefinitions="Auto,Auto,*">
+
+    <!-- Top bar: name, computer, live state, search, scope and sort. -->
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" Margin="16,12,16,10" ColumnSpacing="14">
+      <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <Image Source="/Assets/schedulry-256.png" Width="30" Height="30" />
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="Schedulry" FontSize="16" FontWeight="SemiBold" />
+          <TextBlock Classes="muted" FontSize="12" Text="{Binding ComputerName}" />
+        </StackPanel>
+      </StackPanel>
+
+      <Border Grid.Column="1" CornerRadius="12" Padding="10,4" VerticalAlignment="Center" Background="{DynamicResource BadgeInfoBg}">
+        <StackPanel Orientation="Horizontal" Spacing="7">
+          <Ellipse Classes="livePulse" Width="8" Height="8" Fill="{DynamicResource BadgeInfoDot}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding LiveText}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BadgeInfoFg}" />
+        </StackPanel>
+      </Border>
+
+      <Grid Grid.Column="2" MaxWidth="460" HorizontalAlignment="Left" Margin="12,0,0,0">
+        <TextBox Classes="search" Text="{Binding SearchText}" Watermark="Search names, programs, accounts and descriptions"
+                 Padding="34,6,34,6" />
+        <ic:FluentIcon Icon="Search" FontSize="14" Margin="12,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextMuted}" IsHitTestVisible="False" />
+        <Button Classes="neutral small" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0" Padding="6,2"
+                Command="{Binding ClearSearchCommand}" IsVisible="{Binding SearchText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <ic:FluentIcon Icon="Dismiss" FontSize="12" />
+        </Button>
+      </Grid>
+
+      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <ToggleSwitch IsChecked="{Binding ShowWindowsTasks}" OnContent="Showing Windows tasks" OffContent="Show Windows tasks" />
+        <TextBlock Classes="secondary" Text="Sort by" VerticalAlignment="Center" />
+        <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort}" MinWidth="120">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:SortOption">
+              <TextBlock Text="{Binding Title}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <Button Classes="neutral" Command="{Binding ToggleSortDirectionCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <ic:FluentIcon Icon="ArrowSort" FontSize="14" />
+            <TextBlock Text="{Binding SortDirectionText}" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <!-- Banners: admin rights, history log, a problem reading. -->
+    <StackPanel Grid.Row="1" Margin="16,0,16,8" Spacing="8">
+      <Border Classes="banner error" IsVisible="{Binding HasLiveProblem}">
+        <TextBlock Text="{Binding LiveProblem}" TextWrapping="Wrap" />
+      </Border>
+      <Border Classes="banner error" IsVisible="{Binding HasBannerProblem}">
+        <TextBlock Text="{Binding BannerProblem}" TextWrapping="Wrap" />
+      </Border>
+      <Border Classes="banner" IsVisible="{Binding ShowAdminBanner}">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <ic:FluentIcon Icon="ShieldPerson" FontSize="18" VerticalAlignment="Center" Foreground="{DynamicResource Accent}" />
+          <TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap"
+                     Text="Running without administrator rights. You can see most tasks, but only change the ones that run as you." />
+          <Button Grid.Column="2" Classes="primary" Content="Restart as Administrator" Command="{Binding RestartAsAdminCommand}" />
+        </Grid>
+      </Border>
+      <Border Classes="banner info" IsVisible="{Binding ShowHistoryBanner}">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <ic:FluentIcon Icon="History" FontSize="18" VerticalAlignment="Center" Foreground="{DynamicResource BadgeWarningFg}" />
+          <TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap"
+                     Text="Task history is off in Windows. Turn it on to keep a record of every run and see starts and finishes the instant they happen. Windows asks for administrator approval." />
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+            <Button Classes="primary" Content="Turn On History" Command="{Binding TurnOnHistoryCommand}" />
+            <Button Classes="neutral" Content="Not Now" Command="{Binding DismissHistoryBannerCommand}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </StackPanel>
+
+    <!-- Body: sidebar | list | preview -->
+    <Grid Grid.Row="2" ColumnDefinitions="212,*,390" Margin="16,0,16,16" ColumnSpacing="12">
+
+      <Border Classes="card" Background="{DynamicResource SidebarBg}">
+        <ScrollViewer>
+          <StackPanel Margin="0,0,0,10">
+            <TextBlock Classes="section" Text="STATUS" />
+            <ListBox Classes="nav" ItemsSource="{Binding Views}" SelectedItem="{Binding SelectedView}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:ViewItem">
+                  <Grid ColumnDefinitions="*,Auto" Margin="10,0">
+                    <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Classes="muted" Text="{Binding Count}" VerticalAlignment="Center" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock Classes="section" Text="FOLDERS" />
+            <ListBox Classes="nav" ItemsSource="{Binding Folders}" SelectedItem="{Binding SelectedFolder}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:FolderItem">
+                  <Grid ColumnDefinitions="Auto,*,Auto" Margin="{Binding Indent, Converter={x:Static c:Converters.LeftMargin}}">
+                    <ic:FluentIcon Icon="Folder" FontSize="14" Margin="0,0,7,0" VerticalAlignment="Center" Foreground="{DynamicResource TextMuted}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" Classes="muted" Text="{Binding Count}" Margin="6,0,10,0" VerticalAlignment="Center" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+
+      <!-- The live list -->
+      <Border Grid.Column="1" Classes="card" ClipToBounds="True">
+        <Grid RowDefinitions="Auto,*">
+          <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,0,0,1" Padding="16,10" Background="{DynamicResource SubtleBg}" CornerRadius="10,10,0,0">
+            <Grid ColumnDefinitions="118,2*,1.7*,132,1.5*,140" ColumnSpacing="12">
+              <TextBlock Classes="columnHeader" Text="Status" />
+              <TextBlock Classes="columnHeader" Grid.Column="1" Text="Task" />
+              <TextBlock Classes="columnHeader" Grid.Column="2" Text="Schedule" />
+              <TextBlock Classes="columnHeader" Grid.Column="3" Text="Last Run" />
+              <TextBlock Classes="columnHeader" Grid.Column="4" Text="Last Result" />
+              <TextBlock Classes="columnHeader" Grid.Column="5" Text="Next Run" />
+            </Grid>
+          </Border>
+
+          <ListBox Grid.Row="1" Classes="tasks" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:TaskRowViewModel">
+                <Border Classes="taskRow" Classes.fresh="{Binding IsFresh}">
+                  <Grid ColumnDefinitions="118,2*,1.7*,132,1.5*,140" ColumnSpacing="12">
+                    <c:Chip Kind="{Binding StatusKind}" Content="{Binding StatusText}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Classes="muted" FontSize="12" Text="{Binding Folder}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Classes="secondary" Text="{Binding ScheduleText}" TextWrapping="WrapWithOverflow" MaxLines="2"
+                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="3" Classes="secondary" Text="{Binding LastRunText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="4" Classes="secondary" Text="{Binding ResultShort}" TextWrapping="WrapWithOverflow" MaxLines="2"
+                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="5" Classes="secondary" Text="{Binding NextRunText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" IsVisible="{Binding IsLoading}">
+            <ProgressBar IsIndeterminate="True" Width="200" />
+            <TextBlock Classes="secondary" Text="Reading tasks…" HorizontalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Grid.Row="1" Classes="secondary" Text="{Binding EmptyText}" IsVisible="{Binding IsEmpty}" TextWrapping="Wrap"
+                     MaxWidth="420" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+
+      <!-- Preview -->
+      <Border Grid.Column="2" Classes="card">
+        <Grid>
+          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" IsVisible="{Binding !HasDetail}" Margin="24">
+            <ic:FluentIcon Icon="CalendarClock" FontSize="32" HorizontalAlignment="Center" Foreground="{DynamicResource TextMuted}" />
+            <TextBlock Classes="secondary" Text="Select a task to see when it runs, what it does and how its last run went." TextWrapping="Wrap" TextAlignment="Center" />
+          </StackPanel>
+          <ContentControl Content="{Binding Detail}" IsVisible="{Binding HasDetail}">
+            <ContentControl.DataTemplates>
+              <DataTemplate x:DataType="vm:TaskDetailViewModel">
+                <ScrollViewer>
+                  <StackPanel Margin="20,18,20,8">
+                    <TextBlock Classes="h1" Text="{Binding Row.Name}" TextWrapping="Wrap" />
+                    <TextBlock Classes="muted" Text="{Binding Row.Path}" TextWrapping="Wrap" Margin="0,2,0,10" />
+                    <c:Chip Kind="{Binding Row.StatusKind}" Content="{Binding Row.StatusText}" />
+                    <TextBlock Classes="secondary" Text="{Binding Description}" IsVisible="{Binding HasDescription}" TextWrapping="Wrap" Margin="0,12,0,0" />
+
+                    <WrapPanel Margin="0,14,0,0" ItemSpacing="8" LineSpacing="8">
+                      <Button Classes="primary" Command="{Binding RunCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <ic:FluentIcon Icon="Play" FontSize="14" />
+                          <TextBlock Text="Run Now" />
+                        </StackPanel>
+                      </Button>
+                      <Button Command="{Binding EndCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <ic:FluentIcon Icon="Stop" FontSize="14" />
+                          <TextBlock Text="End" />
+                        </StackPanel>
+                      </Button>
+                      <Button Classes="neutral" Content="Turn Off" Command="{Binding TurnOffCommand}" IsVisible="{Binding Row.Task.Enabled}" />
+                      <Button Content="Turn On" Command="{Binding TurnOnCommand}" IsVisible="{Binding !Row.Task.Enabled}" />
+                    </WrapPanel>
+                    <TextBlock Classes="muted" FontSize="12" Text="{Binding ActionNote}" IsVisible="{Binding HasActionNote}" TextWrapping="Wrap" Margin="0,8,0,0" />
+                    <Border Classes="banner error" IsVisible="{Binding HasProblem}" Margin="0,10,0,0">
+                      <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
+                    </Border>
+
+                    <Border Classes="detailSection" Margin="0,16,0,0">
+                      <StackPanel Spacing="3">
+                        <TextBlock Classes="h2" Text="Last Run" />
+                        <TextBlock Text="{Binding ResultTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Classes="secondary" Text="{Binding ResultDetail}" IsVisible="{Binding HasResultDetail}" TextWrapping="Wrap" />
+                        <TextBlock Classes="muted" FontSize="12" Text="{Binding LastRunFull}" />
+                        <TextBlock Classes="muted" FontSize="12" Text="{Binding ResultCode}" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Classes="detailSection">
+                      <StackPanel Spacing="4">
+                        <TextBlock Classes="h2" Text="When It Runs" />
+                        <ItemsControl ItemsSource="{Binding Triggers}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                              <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2">
+                                <ic:FluentIcon Icon="Clock" FontSize="14" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                                <TextBlock Text="{Binding}" TextWrapping="Wrap" MaxWidth="340" />
+                              </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Classes="secondary" FontWeight="SemiBold" FontSize="12" Text="Next runs" Margin="0,8,0,0" />
+                        <TextBlock Classes="muted" Text="Working them out…" IsVisible="{Binding NextRunsLoading}" />
+                        <TextBlock Classes="muted" Text="Nothing scheduled." IsVisible="{Binding NoNextRuns}" />
+                        <ItemsControl ItemsSource="{Binding NextRuns}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                              <TextBlock Classes="secondary" Text="{Binding}" Margin="0,1" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+
+                    <Border Classes="detailSection">
+                      <StackPanel Spacing="6">
+                        <TextBlock Classes="h2" Text="What It Does" />
+                        <ItemsControl ItemsSource="{Binding Actions}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:DetailLine">
+                              <Border Background="{DynamicResource SubtleBg}" CornerRadius="6" Padding="10,8" Margin="0,0,0,6">
+                                <StackPanel Spacing="2">
+                                  <SelectableTextBlock Text="{Binding Label}" FontFamily="Cascadia Mono,Consolas,monospace" FontSize="12" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource TextPrimary}" />
+                                  <TextBlock Classes="muted" FontSize="12" Text="{Binding Value}" IsVisible="{Binding Value, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                </StackPanel>
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+
+                    <Border Classes="detailSection">
+                      <StackPanel Spacing="3">
+                        <TextBlock Classes="h2" Text="Runs As" />
+                        <TextBlock Text="{Binding RunAsTitle}" FontWeight="SemiBold" />
+                        <TextBlock Classes="secondary" Text="{Binding RunAsExplanation}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Classes="detailSection">
+                      <StackPanel Spacing="6">
+                        <TextBlock Classes="h2" Text="Settings" />
+                        <ItemsControl ItemsSource="{Binding Settings}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:DetailLine">
+                              <Grid ColumnDefinitions="130,*" Margin="0,2">
+                                <TextBlock Classes="muted" Text="{Binding Label}" TextWrapping="Wrap" />
+                                <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+                </ScrollViewer>
+              </DataTemplate>
+            </ContentControl.DataTemplates>
+          </ContentControl>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

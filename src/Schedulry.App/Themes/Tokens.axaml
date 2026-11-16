@@ -1,0 +1,155 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Design tokens: every colour the app uses, defined once per theme. Views refer to these keys
+       with DynamicResource only, so a theme switch repaints everything. Both dictionaries must
+       define the same keys (a test checks). -->
+  <TransformOperations x:Key="HorizontalSmallScrollThumbScaleTransform">scaleY(0.5)</TransformOperations>
+  <TransformOperations x:Key="VerticalSmallScrollThumbScaleTransform">scaleX(0.5)</TransformOperations>
+
+  <ResourceDictionary.ThemeDictionaries>
+
+    <ResourceDictionary x:Key="Light">
+      <Color x:Key="SystemAccentColor">#3B5BDB</Color>
+      <Color x:Key="SystemAccentColorDark1">#3451C7</Color>
+      <Color x:Key="SystemAccentColorDark2">#2C46B0</Color>
+      <Color x:Key="SystemAccentColorLight1">#4C6BE3</Color>
+      <Color x:Key="SystemAccentColorLight2">#6681EA</Color>
+      <SolidColorBrush x:Key="AccentFill" Color="#3B5BDB" />
+
+      <SolidColorBrush x:Key="WindowBg" Color="#F3F4F6" />
+      <SolidColorBrush x:Key="SidebarBg" Color="#E9EBEF" />
+      <SolidColorBrush x:Key="CardBg" Color="#FFFFFF" />
+      <!-- Buttons: a soft blue fill with blue text, never the colour of what they sit on. Disabled
+           ones fade to grey so they can't be mistaken for working ones. -->
+      <SolidColorBrush x:Key="ButtonBackground" Color="#E3EAFD" />
+      <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#D3DEFB" />
+      <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#C3D2F9" />
+      <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#F0F1F3" />
+      <SolidColorBrush x:Key="ButtonForeground" Color="#2443B0" />
+      <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#1C3796" />
+      <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#1C3796" />
+      <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#A4AAB3" />
+      <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonNeutralBg" Color="#ECEEF1" />
+      <SolidColorBrush x:Key="ButtonNeutralBgHover" Color="#E1E4E9" />
+      <SolidColorBrush x:Key="CardBorder" Color="#D9DDE3" />
+      <SolidColorBrush x:Key="Divider" Color="#E6E8EC" />
+      <SolidColorBrush x:Key="SubtleBg" Color="#F6F7F9" />
+
+      <SolidColorBrush x:Key="TextPrimary" Color="#1F2328" />
+      <SolidColorBrush x:Key="TextSecondary" Color="#4E5763" />
+      <SolidColorBrush x:Key="TextMuted" Color="#6A737D" />
+      <SolidColorBrush x:Key="Accent" Color="#3B5BDB" />
+
+      <SolidColorBrush x:Key="NavHoverBg" Color="#DDE1E7" />
+      <SolidColorBrush x:Key="NavSelectedBg" Color="#DCE3FB" />
+      <SolidColorBrush x:Key="NavSelectedFg" Color="#1E3A8A" />
+      <SolidColorBrush x:Key="RowHoverBg" Color="#F4F6FA" />
+      <SolidColorBrush x:Key="RowSelectedBg" Color="#E4E9FC" />
+      <!-- A row that just changed: a soft accent wash that fades (never a warning colour). -->
+      <SolidColorBrush x:Key="FreshBg" Color="#D6E0FF" />
+
+      <SolidColorBrush x:Key="BadgeNeutralBg" Color="#E8EAED" />
+      <SolidColorBrush x:Key="BadgeNeutralFg" Color="#3D4651" />
+      <SolidColorBrush x:Key="BadgeNeutralBorder" Color="#D6DADF" />
+      <SolidColorBrush x:Key="BadgeNeutralDot" Color="#8A929C" />
+      <SolidColorBrush x:Key="BadgeInfoBg" Color="#E0EAFF" />
+      <SolidColorBrush x:Key="BadgeInfoFg" Color="#1D46B8" />
+      <SolidColorBrush x:Key="BadgeInfoBorder" Color="#C4D4FB" />
+      <SolidColorBrush x:Key="BadgeInfoDot" Color="#3B6CF0" />
+      <SolidColorBrush x:Key="BadgeSuccessBg" Color="#DCF3E3" />
+      <SolidColorBrush x:Key="BadgeSuccessFg" Color="#17602F" />
+      <SolidColorBrush x:Key="BadgeSuccessBorder" Color="#B8E2C5" />
+      <SolidColorBrush x:Key="BadgeSuccessDot" Color="#21A355" />
+      <SolidColorBrush x:Key="BadgeWarningBg" Color="#FFF0D1" />
+      <SolidColorBrush x:Key="BadgeWarningFg" Color="#7A4A00" />
+      <SolidColorBrush x:Key="BadgeWarningBorder" Color="#F1D8A6" />
+      <SolidColorBrush x:Key="BadgeWarningDot" Color="#DE9B00" />
+      <SolidColorBrush x:Key="BadgeDangerBg" Color="#FDE2E1" />
+      <SolidColorBrush x:Key="BadgeDangerFg" Color="#9F1C1C" />
+      <SolidColorBrush x:Key="BadgeDangerBorder" Color="#F5C2C0" />
+      <SolidColorBrush x:Key="BadgeDangerDot" Color="#D9382A" />
+
+      <SolidColorBrush x:Key="BannerErrorBg" Color="#FDE2E1" />
+      <SolidColorBrush x:Key="BannerInfoBg" Color="#FFF5DB" />
+      <SolidColorBrush x:Key="BannerNoteBg" Color="#E6ECFD" />
+
+      <SolidColorBrush x:Key="ScrollThumb" Color="#B9BFC8" />
+      <SolidColorBrush x:Key="ScrollThumbHover" Color="#8D95A1" />
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="SystemAccentColor">#4A66D9</Color>
+      <Color x:Key="SystemAccentColorDark1">#4560D0</Color>
+      <Color x:Key="SystemAccentColorDark2">#3E58C2</Color>
+      <Color x:Key="SystemAccentColorLight1">#4A66D9</Color>
+      <Color x:Key="SystemAccentColorLight2">#4560D0</Color>
+      <SolidColorBrush x:Key="AccentFill" Color="#4A66D9" />
+
+      <SolidColorBrush x:Key="WindowBg" Color="#18191C" />
+      <SolidColorBrush x:Key="SidebarBg" Color="#1F2024" />
+      <SolidColorBrush x:Key="CardBg" Color="#24262B" />
+      <SolidColorBrush x:Key="ButtonBackground" Color="#283A6B" />
+      <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#31457C" />
+      <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#3A508C" />
+      <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#2A2C31" />
+      <SolidColorBrush x:Key="ButtonForeground" Color="#D3DEFF" />
+      <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#E6ECFF" />
+      <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#E6ECFF" />
+      <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#62676F" />
+      <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="Transparent" />
+      <SolidColorBrush x:Key="ButtonNeutralBg" Color="#35383F" />
+      <SolidColorBrush x:Key="ButtonNeutralBgHover" Color="#3E424A" />
+      <SolidColorBrush x:Key="CardBorder" Color="#363940" />
+      <SolidColorBrush x:Key="Divider" Color="#2E3137" />
+      <SolidColorBrush x:Key="SubtleBg" Color="#1D1F23" />
+
+      <SolidColorBrush x:Key="TextPrimary" Color="#E8EAED" />
+      <SolidColorBrush x:Key="TextSecondary" Color="#B4BBC4" />
+      <SolidColorBrush x:Key="TextMuted" Color="#959DA8" />
+      <SolidColorBrush x:Key="Accent" Color="#7F9BFF" />
+
+      <SolidColorBrush x:Key="NavHoverBg" Color="#2A2C32" />
+      <SolidColorBrush x:Key="NavSelectedBg" Color="#2D3755" />
+      <SolidColorBrush x:Key="NavSelectedFg" Color="#D0DBFF" />
+      <SolidColorBrush x:Key="RowHoverBg" Color="#2A2C31" />
+      <SolidColorBrush x:Key="RowSelectedBg" Color="#2B3552" />
+      <SolidColorBrush x:Key="FreshBg" Color="#30406E" />
+
+      <SolidColorBrush x:Key="BadgeNeutralBg" Color="#33363D" />
+      <SolidColorBrush x:Key="BadgeNeutralFg" Color="#CDD2D9" />
+      <SolidColorBrush x:Key="BadgeNeutralBorder" Color="#464A52" />
+      <SolidColorBrush x:Key="BadgeNeutralDot" Color="#9AA2AD" />
+      <SolidColorBrush x:Key="BadgeInfoBg" Color="#1F2D52" />
+      <SolidColorBrush x:Key="BadgeInfoFg" Color="#A9C1FF" />
+      <SolidColorBrush x:Key="BadgeInfoBorder" Color="#2E4275" />
+      <SolidColorBrush x:Key="BadgeInfoDot" Color="#7FA0FF" />
+      <SolidColorBrush x:Key="BadgeSuccessBg" Color="#173A26" />
+      <SolidColorBrush x:Key="BadgeSuccessFg" Color="#86E0A6" />
+      <SolidColorBrush x:Key="BadgeSuccessBorder" Color="#245338" />
+      <SolidColorBrush x:Key="BadgeSuccessDot" Color="#4CCB7E" />
+      <SolidColorBrush x:Key="BadgeWarningBg" Color="#3E2F10" />
+      <SolidColorBrush x:Key="BadgeWarningFg" Color="#F4C46E" />
+      <SolidColorBrush x:Key="BadgeWarningBorder" Color="#5A4519" />
+      <SolidColorBrush x:Key="BadgeWarningDot" Color="#F2B544" />
+      <SolidColorBrush x:Key="BadgeDangerBg" Color="#47191C" />
+      <SolidColorBrush x:Key="BadgeDangerFg" Color="#FFA3A3" />
+      <SolidColorBrush x:Key="BadgeDangerBorder" Color="#682629" />
+      <SolidColorBrush x:Key="BadgeDangerDot" Color="#FF6B6B" />
+
+      <SolidColorBrush x:Key="BannerErrorBg" Color="#47191C" />
+      <SolidColorBrush x:Key="BannerInfoBg" Color="#3A2F14" />
+      <SolidColorBrush x:Key="BannerNoteBg" Color="#222C47" />
+
+      <SolidColorBrush x:Key="ScrollThumb" Color="#4A4F58" />
+      <SolidColorBrush x:Key="ScrollThumbHover" Color="#6B717C" />
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

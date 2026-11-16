@@ -1,0 +1,3 @@
+# gitleaks reads this from the repository root and keeps every default rule.
+[extend]
+useDefault = true

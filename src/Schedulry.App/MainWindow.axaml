@@ -1,0 +1,12 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Schedulry.ViewModels"
+        xmlns:views="using:Schedulry.App.Views"
+        x:Class="Schedulry.App.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="{Binding Title}"
+        Icon="/Assets/schedulry.ico"
+        Background="{DynamicResource WindowBg}"
+        Width="1400" Height="860" MinWidth="960" MinHeight="560">
+  <views:MainView />
+</Window>

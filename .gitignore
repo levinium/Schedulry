@@ -1,0 +1,17 @@
+bin/
+obj/
+dist/
+publish/
+releases/
+*.user
+.vs/
+.vscode/
+.idea/
+TestResults/
+snapshots-out/
+
+# Exported tasks and logs can name real machines, accounts and paths. They belong in the
+# app-data folder or a temp folder, never here.
+*.log
+*.xml.local
+*.local.json

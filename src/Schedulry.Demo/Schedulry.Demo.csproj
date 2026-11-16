@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- A made-up computer with made-up tasks that start and finish on their own. Used for demo
+       mode, screenshots and tests, so nothing real ever appears in them. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Schedulry.Core\Schedulry.Core.csproj" />
+  </ItemGroup>
+
+</Project>

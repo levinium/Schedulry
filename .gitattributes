@@ -1,0 +1,12 @@
+# LF everywhere, in the repository and the working copy. Git for Windows sets core.autocrlf=true
+# system wide; without this the hooks get CRLF and fail with a "bad interpreter" error.
+* text=auto eol=lf
+
+# Git hooks have no extension, so name them explicitly.
+tools/hooks/* text eol=lf
+*.sh text eol=lf
+*.ps1 text eol=lf
+
+*.png binary
+*.ico binary
+*.zip binary

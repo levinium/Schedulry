@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The model, the plain-language wording and the live monitor. No COM and no UI, so all of it
+       is tested against the demo host. -->
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Schedulry.Tests" />
+  </ItemGroup>
+
+</Project>

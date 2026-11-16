@@ -1,0 +1,52 @@
+namespace Schedulry.Core;
+
+/// <summary>
+/// One computer's Task Scheduler. The Windows host talks to the real service; the demo host
+/// simulates one. Calls may be slow (COM, network) and are made from a background thread.
+/// </summary>
+public interface ISchedulerHost : IDisposable
+{
+    /// <summary>The computer's name, as shown in the title bar.</summary>
+    string ComputerName { get; }
+
+    /// <summary>True when this app runs as administrator, so every task can be changed.</summary>
+    bool IsElevated { get; }
+
+    /// <summary>The account this app runs as (DOMAIN\user), to tell which tasks are the user's own.</summary>
+    string CurrentUser { get; }
+
+    /// <summary>Every task in every folder, read in full. Folders the account can't open are skipped.</summary>
+    IReadOnlyList<TaskSnapshot> ReadAll();
+
+    /// <summary>One task in full, or null when it no longer exists.</summary>
+    TaskSnapshot? Read(string path);
+
+    /// <summary>
+    /// The live fields of every task. Cheaper than <see cref="ReadAll"/>. Without
+    /// <paramref name="includeWindowsTasks"/> the \Microsoft folder is skipped: it holds most of a
+    /// computer's tasks, and each one costs a call to the Task Scheduler service.
+    /// </summary>
+    IReadOnlyList<TaskStatusInfo> ReadStatus(bool includeWindowsTasks = true);
+
+    /// <summary>Instances running right now, hidden tasks included.</summary>
+    IReadOnlyList<RunningInstance> ReadRunning();
+
+    /// <summary>The next run times, up to <paramref name="count"/>, within the coming year.</summary>
+    IReadOnlyList<DateTime> NextRuns(string path, int count);
+
+    /// <summary>The task's definition as Task Scheduler stores it.</summary>
+    string ReadXml(string path);
+
+    /// <summary>Whether Task Scheduler is keeping its history log (off by default in Windows).</summary>
+    bool HistoryEnabled { get; }
+
+    /// <summary>
+    /// Raised from any thread with a task's path when the history log records something about it
+    /// (started, finished, changed, deleted). Never raised while the history log is off.
+    /// </summary>
+    event Action<string>? TaskEvent;
+
+    void Run(string path);
+    void Stop(string path);
+    void SetEnabled(string path, bool enabled);
+}

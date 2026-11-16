@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Renders the main screens to PNG, in light and dark, with no window and no clicking. Uses only
+       the demo computer, so its output is safe for docs and the README. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>schedulry-snapshots</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Skia" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Schedulry.App\Schedulry.App.csproj" />
+  </ItemGroup>
+
+</Project>

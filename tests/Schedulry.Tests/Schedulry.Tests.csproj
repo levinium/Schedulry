@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Schedulry.Core\Schedulry.Core.csproj" />
+    <ProjectReference Include="..\..\src\Schedulry.Demo\Schedulry.Demo.csproj" />
+    <ProjectReference Include="..\..\src\Schedulry.ViewModels\Schedulry.ViewModels.csproj" />
+    <ProjectReference Include="..\..\src\Schedulry.Windows\Schedulry.Windows.csproj" />
+  </ItemGroup>
+
+  <!-- The theme tokens are checked as text, so the test needs no Avalonia. -->
+  <ItemGroup>
+    <None Include="..\..\src\Schedulry.App\Themes\Tokens.axaml" Link="Tokens.axaml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

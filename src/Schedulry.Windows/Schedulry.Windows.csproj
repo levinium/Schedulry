@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The real Task Scheduler, through its COM API, and its history log. -->
+
+  <ItemGroup>
+    <PackageReference Include="TaskScheduler" />
+    <PackageReference Include="System.Diagnostics.EventLog" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Schedulry.Core\Schedulry.Core.csproj" />
+  </ItemGroup>
+
+</Project>

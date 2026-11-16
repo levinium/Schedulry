@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- View models carry no Avalonia reference, so they're tested without a display. -->
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Schedulry.Core\Schedulry.Core.csproj" />
+  </ItemGroup>
+
+</Project>
