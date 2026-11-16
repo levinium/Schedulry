@@ -188,6 +188,64 @@ public sealed class WindowsSchedulerHost : ISchedulerHost
         }
     }
 
+    // Named fields of a history event, read the same way whatever the event's layout.
+    static readonly EventLogPropertySelector HistoryFields = new(
+    [
+        "Event/EventData/Data[@Name='TaskName']",
+        "Event/EventData/Data[@Name='ResultCode']",
+        "Event/EventData/Data[@Name='Path']",
+    ]);
+
+    public IReadOnlyList<RunRecord> ReadRuns(string? path, DateTime since, int maxRuns)
+    {
+        if (!HistoryEnabled)
+            return [];
+        var ids = string.Join(" or ", RunHistory.RunEventIds.Select(id => $"EventID={id}"));
+        var xpath = $"*[System[({ids}) and TimeCreated[@SystemTime>='{since.ToUniversalTime():yyyy-MM-ddTHH:mm:ss.fffZ}']]]";
+        if (path is not null)
+        {
+            // XPath has no escape for quotes: pick the kind the path doesn't contain.
+            var quoted = path.Contains('\'') ? $"\"{path}\"" : $"'{path}'";
+            xpath += $" and *[EventData[Data[@Name='TaskName']={quoted}]]";
+        }
+
+        var events = new List<HistoryEvent>();
+        var activities = new HashSet<Guid>();
+        using var session = Session();
+        var query = new EventLogQuery(HistoryLog, PathType.LogName, xpath) { ReverseDirection = true, Session = session };
+        using var reader = new EventLogReader(query);
+        // Newest first; stop once there are enough runs (plus one, whose start may be cut off).
+        for (var read = 0; read < 50_000; read++)
+        {
+            using var record = (EventLogRecord?)reader.ReadEvent();
+            if (record is null)
+                break;
+            if (record.ActivityId is not { } activity || record.TimeCreated is not { } time)
+                continue;
+            if (activities.Add(activity) && activities.Count > maxRuns + 1)
+                break;
+            var values = record.GetPropertyValues(HistoryFields);
+            if (values[0] is not string task)
+                continue;
+            int? code = values[1] switch
+            {
+                int i => i,
+                uint u => unchecked((int)u),
+                long l => unchecked((int)l),
+                _ => null,
+            };
+            events.Add(new HistoryEvent(record.Id, time, activity, task, code, values[2] as string));
+        }
+        return RunHistory.Build(events).Take(maxRuns).ToList();
+    }
+
+    public void Delete(string path)
+    {
+        using var task = Find(path) ?? throw new InvalidOperationException("The task no longer exists.");
+        using var folder = task.Folder;
+        folder.DeleteTask(task.Name, exceptionOnNotExists: false);
+    }
+
     public void Run(string path)
     {
         using var task = Find(path) ?? throw new InvalidOperationException("The task no longer exists.");

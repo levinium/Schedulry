@@ -52,6 +52,22 @@ public static class When
         return $"{TriggerText.DateText(t)} {time}";
     }
 
+    /// <summary>How long a run took, briefly: "6 s", "3 min 12 s", "1 h 4 min", "2 d 3 h".</summary>
+    public static string Took(TimeSpan span)
+    {
+        if (span < TimeSpan.Zero)
+            span = TimeSpan.Zero;
+        if (span.TotalSeconds < 1)
+            return "under 1 s";
+        if (span.TotalMinutes < 1)
+            return $"{(int)span.TotalSeconds} s";
+        if (span.TotalHours < 1)
+            return span.Seconds == 0 ? $"{span.Minutes} min" : $"{span.Minutes} min {span.Seconds} s";
+        if (span.TotalDays < 1)
+            return span.Minutes == 0 ? $"{span.Hours} h" : $"{span.Hours} h {span.Minutes} min";
+        return span.Hours == 0 ? $"{(int)span.TotalDays} d" : $"{(int)span.TotalDays} d {span.Hours} h";
+    }
+
     /// <summary>A running time on a stopwatch: "0:42", "12:05", "1:02:33"; past a day, "2d 4h".</summary>
     public static string Elapsed(TimeSpan span)
     {

@@ -24,6 +24,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject, IDisposable
         Rebuild();
         RefreshGroups();
         _ = LoadNextRunsAsync();
+        _ = LoadRunsAsync();
     }
 
     public TaskRowViewModel Row { get; }
@@ -42,8 +43,93 @@ public sealed partial class TaskDetailViewModel : ObservableObject, IDisposable
     [ObservableProperty] public partial string RunAsExplanation { get; private set; } = "";
     [ObservableProperty] public partial string? ActionNote { get; private set; }
     [ObservableProperty] public partial string? Problem { get; private set; }
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(EndCommand), nameof(TurnOnCommand), nameof(TurnOffCommand))]
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(EndCommand), nameof(TurnOnCommand), nameof(TurnOffCommand), nameof(AskDeleteCommand))]
     public partial bool Busy { get; private set; }
+
+    // ---- Run history ----
+
+    [ObservableProperty] public partial IReadOnlyList<RunLine> Runs { get; private set; } = [];
+    [ObservableProperty] public partial bool RunsLoading { get; private set; } = true;
+    public bool HistoryOff => !_shell.HistoryEnabled;
+    public bool NoRuns => !RunsLoading && !HistoryOff && Runs.Count == 0;
+
+    partial void OnRunsChanged(IReadOnlyList<RunLine> value) => OnPropertyChanged(nameof(NoRuns));
+    partial void OnRunsLoadingChanged(bool value) => OnPropertyChanged(nameof(NoRuns));
+
+    /// <summary>The last 30 days of runs from the history log (up to 25).</summary>
+    public async Task LoadRunsAsync()
+    {
+        OnPropertyChanged(nameof(HistoryOff));
+        if (HistoryOff)
+        {
+            Runs = [];
+            RunsLoading = false;
+            return;
+        }
+        var path = Task.Path;
+        RunsLoading = Runs.Count == 0;
+        IReadOnlyList<RunRecord> runs = [];
+        try
+        {
+            await Platform.Background(() =>
+            {
+                runs = _shell.Host.ReadRuns(path, DateTime.Now.AddDays(-30), 25);
+                return System.Threading.Tasks.Task.CompletedTask;
+            });
+        }
+        catch (Exception)
+        {
+            // An unreadable log (permissions, a remote computer gone) shows as an empty history.
+        }
+        if (path != Task.Path)
+            return;
+        var now = DateTime.Now;
+        Runs = runs.Select(r => RunLine.From(r, now)).ToList();
+        RunsLoading = false;
+    }
+
+    [RelayCommand]
+    Task TurnOnHistoryAsync() => _shell.TurnOnHistoryCommand.ExecuteAsync(null);
+
+    // ---- Delete ----
+
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(AskDeleteCommand))] public partial bool IsConfirmingDelete { get; private set; }
+
+    bool CanDelete() => !Busy && CanChange && !IsConfirmingDelete;
+
+    [RelayCommand(CanExecute = nameof(CanDelete))]
+    void AskDelete() => IsConfirmingDelete = true;
+
+    [RelayCommand]
+    void CancelDelete() => IsConfirmingDelete = false;
+
+    [RelayCommand]
+    async Task ConfirmDeleteAsync()
+    {
+        IsConfirmingDelete = false;
+        await ActAsync(host => host.Delete(Task.Path), "delete");
+    }
+
+    /// <summary>Saves the task's definition as Task Scheduler XML, so it can be imported again.</summary>
+    [RelayCommand]
+    async Task SaveCopyAsync()
+    {
+        Problem = null;
+        try
+        {
+            var xml = "";
+            await Platform.Background(() =>
+            {
+                xml = _shell.Host.ReadXml(Task.Path);
+                return System.Threading.Tasks.Task.CompletedTask;
+            });
+            await Platform.SaveTextFile(Task.Name + ".xml", xml);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            Problem = $"Couldn't save a copy: {e.Message}";
+        }
+    }
 
     // ---- Stars and groups (this app's own; Task Scheduler isn't touched) ----
 
@@ -157,7 +243,9 @@ public sealed partial class TaskDetailViewModel : ObservableObject, IDisposable
         EndCommand.NotifyCanExecuteChanged();
         TurnOnCommand.NotifyCanExecuteChanged();
         TurnOffCommand.NotifyCanExecuteChanged();
+        AskDeleteCommand.NotifyCanExecuteChanged();
         _ = LoadNextRunsAsync();
+        _ = LoadRunsAsync();
     }
 
     /// <summary>Re-reads elevation (after the window comes back from a restart prompt, say).</summary>

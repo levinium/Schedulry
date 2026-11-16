@@ -158,12 +158,20 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public bool HasLiveProblem => LiveProblem is not null;
     public bool HasBannerProblem => BannerProblem is not null;
     public bool HasDetail => Detail is not null;
-    public bool IsEmpty => !IsLoading && Rows.Count == 0;
+    public bool IsEmpty => !IsLoading && Rows.Count == 0 && !ShowActivity;
     public string Title => $"Schedulry · {ComputerName}";
     public string SortDirectionText => SortDescending ? "Descending" : "Ascending";
 
     partial void OnIsElevatedChanged(bool value) => OnPropertyChanged(nameof(ShowAdminBanner));
-    partial void OnHistoryEnabledChanged(bool value) => OnPropertyChanged(nameof(ShowHistoryBanner));
+    partial void OnHistoryEnabledChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowHistoryBanner));
+        OnPropertyChanged(nameof(ActivityNote));
+        OnPropertyChanged(nameof(ActivityEmptyText));
+        _ = Detail?.LoadRunsAsync();
+        if (ShowActivity)
+            _ = RefreshActivityAsync();
+    }
     partial void OnHistoryBannerDismissedChanged(bool value) => OnPropertyChanged(nameof(ShowHistoryBanner));
     partial void OnIsLoadingChanged(bool value)
     {
@@ -217,7 +225,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowGroupTools));
         OnPropertyChanged(nameof(DeleteQuestion));
     }
-    partial void OnSearchTextChanged(string value) => RebuildRows();
+    partial void OnSearchTextChanged(string value)
+    {
+        RebuildRows();
+        if (ShowActivity)
+            _ = RefreshActivityAsync();
+    }
     partial void OnSelectedSortChanged(SortOption value) => RebuildRows();
     partial void OnSortDescendingChanged(bool value)
     {
@@ -226,6 +239,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
     partial void OnShowWindowsTasksChanged(bool value)
     {
+        if (ShowActivity)
+            _ = RefreshActivityAsync();
         RebuildFolders();
         RebuildCounts();
         RebuildRows();
@@ -270,6 +285,130 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     void DismissHistoryBanner() => HistoryBannerDismissed = true;
+
+    // ---- Recent activity ----
+
+    /// <summary>Starts and finishes seen since the app opened, newest first, for when the history log is off.</summary>
+    readonly List<RunLine> _seen = [];
+    bool _activityStale = true;
+    int _activityTicks;
+    bool _activityLoading;
+
+    [ObservableProperty] public partial bool ShowActivity { get; set; }
+    public ObservableCollection<RunLine> Activity { get; } = [];
+    [ObservableProperty] public partial RunLine? SelectedActivity { get; set; }
+
+    public bool ShowTaskList => !ShowActivity;
+    public string ActivityNote => HistoryEnabled
+        ? "Every run in the last 24 hours, from Windows' task history. Select one to see its task."
+        : "Task history is off in Windows, so this lists the starts and finishes Schedulry has seen since it opened.";
+    public bool ActivityEmpty => !IsLoading && ShowActivity && Activity.Count == 0;
+    public string ActivityEmptyText => HistoryEnabled
+        ? "No runs in the last 24 hours."
+        : "Nothing has started or finished since Schedulry opened. Runs appear here the moment they happen.";
+
+    [RelayCommand]
+    void ShowTasks() => ShowActivity = false;
+
+    [RelayCommand]
+    void ShowRecentActivity() => ShowActivity = true;
+
+    partial void OnShowActivityChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowTaskList));
+        OnPropertyChanged(nameof(ActivityEmpty));
+        OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(ActivityNote));
+        if (value)
+            _ = RefreshActivityAsync();
+        else
+            OnSelectedRowChanged(SelectedRow);   // back to the table's selection
+    }
+
+    partial void OnSelectedActivityChanged(RunLine? value)
+    {
+        if (value is null || !_rows.TryGetValue(value.Path, out var row))
+            return;
+        Detail?.Dispose();
+        Detail = new TaskDetailViewModel(row, this);
+        OnPropertyChanged(nameof(HasDetail));
+    }
+
+    bool ActivityVisible(string path)
+    {
+        var search = SearchText.Trim();
+        if (search.Length > 0 && !path.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return false;
+        return _rows.TryGetValue(path, out var row) ? InScope(row.Task) || IsCollected(path) : ShowWindowsTasks || !path.StartsWith(@"\Microsoft\", StringComparison.OrdinalIgnoreCase);
+    }
+
+    bool IsCollected(string path) => _organizer.IsStarred(path) || _organizer.Groups.Any(g => g.Contains(path));
+
+    /// <summary>Reloads Recent Activity: from the history log when it's on, else from what was seen.</summary>
+    public async Task RefreshActivityAsync()
+    {
+        _activityStale = false;
+        if (!HistoryEnabled)
+        {
+            ReplaceActivity(_seen.Where(l => ActivityVisible(l.Path)).ToList());
+            return;
+        }
+        if (_activityLoading)
+            return;
+        _activityLoading = true;
+        IReadOnlyList<RunRecord> runs = [];
+        try
+        {
+            await Platform.Background(() =>
+            {
+                runs = Host.ReadRuns(null, _clock().AddDays(-1), 300);
+                return Task.CompletedTask;
+            });
+        }
+        catch (Exception e)
+        {
+            BannerProblem = $"Couldn't read the task history: {e.Message}";
+        }
+        finally
+        {
+            _activityLoading = false;
+        }
+        var now = _clock();
+        ReplaceActivity(runs.Where(r => ActivityVisible(r.Path)).Select(r => RunLine.From(r, now)).ToList());
+    }
+
+    void ReplaceActivity(IReadOnlyList<RunLine> lines)
+    {
+        var selected = SelectedActivity;
+        Activity.Clear();
+        foreach (var line in lines)
+            Activity.Add(line);
+        if (selected is not null)
+            SelectedActivity = Activity.FirstOrDefault(l => l.Path == selected.Path && l.Time == selected.Time);
+        OnPropertyChanged(nameof(ActivityEmpty));
+    }
+
+    /// <summary>Called for every task update: notes a start or finish for Recent Activity.</summary>
+    void NoteRun(TaskSnapshot before, TaskSnapshot after)
+    {
+        var started = after.State == RunState.Running && before.State != RunState.Running;
+        var finished = (before.State == RunState.Running && after.State != RunState.Running)
+            || (after.State != RunState.Running && after.LastRun != before.LastRun && after.LastRun is not null);
+        if (!started && !finished)
+            return;
+        _activityStale = true;
+        if (HistoryEnabled)
+            return;   // the log has it; the next refresh shows it
+        var line = RunLine.Seen(after, started, _clock());
+        _seen.Insert(0, line);
+        if (_seen.Count > 300)
+            _seen.RemoveAt(_seen.Count - 1);
+        if (ShowActivity && ActivityVisible(line.Path))
+        {
+            Activity.Insert(0, line);
+            OnPropertyChanged(nameof(ActivityEmpty));
+        }
+    }
 
     // ---- Stars and groups ----
 
@@ -497,7 +636,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 default:
                     var existing = _rows[change.Path];
                     var wasVisible = Rows.Contains(existing);
+                    var before = existing.Task;
                     existing.Update(change.Task!, now);
+                    NoteRun(before, existing.Task);
                     var visible = Visible(existing.Task);
                     // Rows stay where they are while visible, so the list doesn't jump under the pointer.
                     if (visible && !wasVisible)
@@ -525,6 +666,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         RefreshClock();
         HistoryEnabled = Host.HistoryEnabled;
+        // Recent Activity from the log: soon after a run moves, and every 30 s regardless.
+        if (ShowActivity && HistoryEnabled && (_activityStale || ++_activityTicks % 15 == 0))
+            _ = RefreshActivityAsync();
         LiveProblem = null;
         RunningCount = _rows.Values.Count(r => r.IsRunning);
         LiveText = RunningCount switch

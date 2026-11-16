@@ -48,6 +48,18 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         vm.SelectedRow = vm.Rows.First(r => r.Name == "Mirror data to NAS");
     });
 
+    Render($"activity-{suffix}", new DemoSchedulerHost(() => moment, historyEnabled: true), vm =>
+    {
+        vm.ShowActivity = true;
+        vm.SelectedActivity = vm.Activity.FirstOrDefault(l => l.Name == "Sync payroll exports");
+    });
+
+    Render($"delete-confirm-{suffix}", new DemoSchedulerHost(() => moment, historyEnabled: true), vm =>
+    {
+        vm.SelectedRow = vm.Rows.First(r => r.Name == "Clear temp folders");
+        vm.Detail!.AskDeleteCommand.Execute(null);
+    });
+
     Render($"windows-tasks-{suffix}", new DemoSchedulerHost(() => moment, elevated: true, historyEnabled: true), vm =>
     {
         vm.ShowWindowsTasks = true;

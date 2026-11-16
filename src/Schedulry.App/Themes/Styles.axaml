@@ -95,6 +95,31 @@
     <Setter Property="Background" Value="{DynamicResource DangerFillHover}" />
     <Setter Property="Foreground" Value="White" />
   </Style>
+  <!-- Tabs: a grey track; the chosen tab is a filled card on it. -->
+  <Style Selector="Border.tabs">
+    <Setter Property="Background" Value="{DynamicResource ButtonNeutralBg}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="3" />
+  </Style>
+  <Style Selector="Button.tab">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+    <Setter Property="Padding" Value="12,5" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="Button.tab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ButtonNeutralBgHover}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+  <Style Selector="Button.tab.selected">
+    <Setter Property="Background" Value="{DynamicResource CardBg}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+  <Style Selector="Button.tab.selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource CardBg}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+
   <!-- Icon buttons (a row's star, a chip's ×): no fill, the icon is the button. -->
   <Style Selector="Button.star, Button.chipRemove">
     <Setter Property="Background" Value="Transparent" />

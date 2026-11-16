@@ -19,6 +19,9 @@ public static class Platform
     public static Func<Task<bool>> EnableHistory { get; set; } = () => Task.FromResult(false);
 
     public static Action<string> CopyText { get; set; } = _ => { };
+
+    /// <summary>Asks where to save a text file (suggested name, contents). False if the person cancelled.</summary>
+    public static Func<string, string, Task<bool>> SaveTextFile { get; set; } = (_, _) => Task.FromResult(false);
 }
 
 /// <summary>Colour family of a status chip; each maps to a Badge*Bg/Fg/Dot token set.</summary>

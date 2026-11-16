@@ -107,6 +107,93 @@ public sealed class DemoSchedulerHost : ISchedulerHost
         return task is null ? "" : DemoXml.For(task);
     }
 
+    public IReadOnlyList<RunRecord> ReadRuns(string? path, DateTime since, int maxRuns)
+    {
+        if (!HistoryEnabled)
+            return [];
+        lock (_gate)
+        {
+            var entries = path is null ? _entries.Values.ToList()
+                : _entries.TryGetValue(path, out var one) ? [one] : [];
+            var now = _clock();
+            return entries.SelectMany(e => RunsOf(e, now, since, maxRuns))
+                .OrderByDescending(r => r.Start).Take(maxRuns).ToList();
+        }
+    }
+
+    /// <summary>A believable past for one demo task: its loop's runs, or a few at its usual spacing.</summary>
+    IEnumerable<RunRecord> RunsOf(Entry entry, DateTime now, DateTime since, int max)
+    {
+        var task = entry.Task;
+        var seed = Math.Abs(task.Path.GetHashCode());
+        if (entry.Manual is { } manual && manual.Start >= since)
+            yield return new RunRecord
+            {
+                Path = task.Path, ActivityId = Guid.NewGuid(), Start = manual.Start, Cause = RunCause.Person,
+                End = now < manual.End ? null : manual.End,
+                Outcome = now < manual.End ? RunEnd.Running : RunEnd.Succeeded, ResultCode = now < manual.End ? null : 0,
+            };
+
+        if (entry.Cycle is { } cycle && task.Enabled)
+        {
+            var (index, start) = CycleAt(entry, now);
+            for (var i = 0; i < max && start >= since; i++, index--, start -= cycle)
+            {
+                var running = now - start < entry.Duration && !(entry.StoppedAt is { } at && at >= start);
+                var failed = entry.FailEvery > 0 && index % entry.FailEvery == 0;
+                yield return new RunRecord
+                {
+                    Path = task.Path, ActivityId = Guid.NewGuid(), Start = start, Cause = RunCause.Schedule,
+                    End = running ? null : start + entry.Duration,
+                    Outcome = running ? RunEnd.Running : failed ? RunEnd.Failed : RunEnd.Succeeded,
+                    ResultCode = running ? null : failed ? entry.FailCode : 0,
+                    Program = task.Actions.FirstOrDefault()?.Path,
+                };
+            }
+            yield break;
+        }
+
+        if (task.LastRun is not { } last)
+            yield break;
+        var spacing = task.Triggers.FirstOrDefault()?.Kind switch
+        {
+            TriggerKind.Weekly => TimeSpan.FromDays(7),
+            TriggerKind.Monthly or TriggerKind.MonthlyDayOfWeek => TimeSpan.FromDays(30),
+            TriggerKind.AtLogOn or TriggerKind.AtStartup or TriggerKind.OnEvent => TimeSpan.FromDays(3),
+            _ => TimeSpan.FromDays(1),
+        };
+        var cause = task.Triggers.FirstOrDefault()?.Kind switch
+        {
+            TriggerKind.AtLogOn => RunCause.LogOn,
+            TriggerKind.AtStartup => RunCause.Startup,
+            TriggerKind.OnEvent => RunCause.Event,
+            _ => RunCause.Schedule,
+        };
+        for (var i = 0; i < Math.Min(max, 8); i++)
+        {
+            var start = last - spacing * i;
+            if (start < since)
+                yield break;
+            var code = i == 0 ? task.LastResult ?? 0 : 0;
+            var seconds = 4 + (seed + i * 37) % 80;
+            yield return new RunRecord
+            {
+                Path = task.Path, ActivityId = Guid.NewGuid(), Start = start, End = start.AddSeconds(seconds), Cause = cause,
+                Outcome = code == 0 ? RunEnd.Succeeded : code == 0x41306 ? RunEnd.Stopped : RunEnd.Failed, ResultCode = code,
+                Program = task.Actions.FirstOrDefault()?.Path,
+            };
+        }
+    }
+
+    public void Delete(string path)
+    {
+        lock (_gate)
+        {
+            CheckCanChange(Get(path).Task);
+            _entries.Remove(path);
+        }
+    }
+
     public void Run(string path)
     {
         lock (_gate)

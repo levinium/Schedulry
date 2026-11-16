@@ -6,7 +6,7 @@ pressing Refresh, and it says what each task does in plain words.
 
 ![Schedulry, light theme](docs/screenshots/main-light.png)
 
-**Status: early development.** Browsing, live status, stars and groups, Run, End and turning tasks on or off work
+**Status: early development.** Browsing, live status, run history, stars and groups, Run, End, Delete and turning tasks on or off work
 today. Editing, remote computers, notifications and installers are on the way.
 
 ## What it does differently
@@ -16,6 +16,7 @@ today. Editing, remote computers, notifications and installers are on the way.
 | Press F5 to see whether anything changed | The list is live: a running task shows how long it has been going, and its status badge pulses when a run starts or finishes |
 | `0x41301`, `0x800710E0`, `0x80070569` | "Still running", "Refused to start", "Sign-in refused: the account lacks the Log on as a batch job right", with what to do about it |
 | Triggers listed as separate rows in a dialog | "Every weekday at 6:00 AM, then every 2 minutes for 12 hours", plus the next five run times |
+| History hidden in a tab of event IDs, off by default | Each task's runs as a list (when, why, how long, how it ended), and a Recent Activity view of every run in the last day |
 | One folder at a time | Search across every folder by name, program, account or description; filter by Running, Failed, Needs a look, Turned off, Never run |
 | "Run whether user is logged on or not" and "Do not store password" | What that means for this task, in a sentence |
 | Windows' own 200 tasks mixed in with yours | Hidden until you switch them on |
@@ -25,6 +26,8 @@ today. Editing, remote computers, notifications and installers are on the way.
 ![Schedulry, dark theme, Windows' own tasks shown](docs/screenshots/windows-tasks-dark.png)
 
 ![Schedulry, a group of the person's own](docs/screenshots/group-light.png)
+
+![Schedulry, Recent Activity](docs/screenshots/activity-light.png)
 
 ## Running it
 

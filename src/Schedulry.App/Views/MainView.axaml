@@ -150,8 +150,17 @@
       <!-- The live list -->
       <Border Grid.Column="2" Classes="card" ClipToBounds="True">
         <Grid RowDefinitions="Auto,Auto,*">
-          <!-- What the list shows, with the group's own tools when a group is showing. -->
-          <Grid ColumnDefinitions="*,Auto" Margin="16,12,12,10" MinHeight="32">
+          <!-- Tasks or Recent Activity; beside them, what the list shows (and a group's own tools). -->
+          <Grid ColumnDefinitions="Auto,*" Margin="12,10,12,8" ColumnSpacing="14">
+          <Border Classes="tabs" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="2">
+              <Button Classes="tab" Classes.selected="{Binding ShowTaskList}" Content="Tasks" Command="{Binding ShowTasksCommand}" />
+              <Button Classes="tab" Classes.selected="{Binding ShowActivity}" Content="Recent Activity" Command="{Binding ShowRecentActivityCommand}" />
+            </StackPanel>
+          </Border>
+          <TextBlock Grid.Column="1" Classes="secondary" FontSize="12" Text="{Binding ActivityNote}" IsVisible="{Binding ShowActivity}"
+                     TextWrapping="Wrap" VerticalAlignment="Center" />
+          <Grid Grid.Column="1" ColumnDefinitions="*,Auto" MinHeight="32" IsVisible="{Binding ShowTaskList}">
             <TextBlock Text="{Binding ScopeTitle}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowGroupTools}">
               <Button Classes="neutral small" Content="Rename Group" Command="{Binding StartRenameCommand}" />
@@ -172,9 +181,10 @@
               </Grid>
             </Border>
           </Grid>
+          </Grid>
 
           <!-- The table: drag a column's edge to resize it (widths are remembered); sort with "Sort by". -->
-          <DataGrid Grid.Row="1" Grid.RowSpan="2" Name="TaskGrid" Classes="tasks" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}"
+          <DataGrid Grid.Row="1" Grid.RowSpan="2" Name="TaskGrid" Classes="tasks" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" IsVisible="{Binding ShowTaskList}"
                     AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" CanUserResizeColumns="True"
                     CanUserReorderColumns="True" CanUserSortColumns="False" GridLinesVisibility="None" HeadersVisibility="Column">
             <DataGrid.Columns>
@@ -247,6 +257,64 @@
             </DataGrid.Columns>
           </DataGrid>
 
+          <!-- Recent Activity: every run, newest first. Selecting one shows its task in the preview. -->
+          <DataGrid Grid.Row="1" Grid.RowSpan="2" Classes="tasks" ItemsSource="{Binding Activity}" SelectedItem="{Binding SelectedActivity}"
+                    IsVisible="{Binding ShowActivity}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                    CanUserResizeColumns="True" CanUserReorderColumns="True" CanUserSortColumns="False" GridLinesVisibility="None" HeadersVisibility="Column">
+            <DataGrid.Columns>
+              <DataGridTemplateColumn Header="When" Width="1*" MinWidth="110">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:RunLine">
+                    <Border Classes="cell">
+                      <TextBlock Classes="secondary" Text="{Binding WhenText}" TextWrapping="WrapWithOverflow" VerticalAlignment="Center" />
+                    </Border>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Task" Width="2.2*" MinWidth="150">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:RunLine">
+                    <Border Classes="cell">
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Classes="muted" Text="{Binding Folder}" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="What Happened" Width="1.6*" MinWidth="130">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:RunLine">
+                    <Border Classes="cell">
+                      <c:Chip Kind="{Binding Kind}" Content="{Binding WhatText}" />
+                    </Border>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Took" Width="0.8*" MinWidth="80">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:RunLine">
+                    <Border Classes="cell">
+                      <TextBlock Classes="secondary" Text="{Binding TookText}" TextWrapping="WrapWithOverflow" VerticalAlignment="Center" />
+                    </Border>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Why" Width="0.9*" MinWidth="90">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:RunLine">
+                    <Border Classes="cell">
+                      <TextBlock Classes="secondary" Text="{Binding CauseText}" TextWrapping="WrapWithOverflow" VerticalAlignment="Center" />
+                    </Border>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+            </DataGrid.Columns>
+          </DataGrid>
+          <TextBlock Grid.Row="2" Classes="secondary" Text="{Binding ActivityEmptyText}" IsVisible="{Binding ActivityEmpty}" TextWrapping="Wrap"
+                     MaxWidth="420" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
+
           <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" IsVisible="{Binding IsLoading}">
             <ProgressBar IsIndeterminate="True" Width="200" />
             <TextBlock Classes="secondary" Text="Reading tasks…" HorizontalAlignment="Center" />
@@ -300,8 +368,21 @@
                         </StackPanel>
                       </Button>
                       <Button Content="Turn On" Command="{Binding TurnOnCommand}" IsVisible="{Binding !Row.Task.Enabled}" />
+                      <Button Classes="neutral" Content="Delete…" Command="{Binding AskDeleteCommand}" />
                     </WrapPanel>
                     <TextBlock Classes="muted" FontSize="12" Text="{Binding ActionNote}" IsVisible="{Binding HasActionNote}" TextWrapping="Wrap" Margin="0,8,0,0" />
+                    <Border Classes="banner info" IsVisible="{Binding IsConfirmingDelete}" Margin="0,10,0,0">
+                      <StackPanel Spacing="10">
+                        <TextBlock TextWrapping="Wrap">
+                          <Run Text="Delete " /><Run Text="{Binding Row.Name}" FontWeight="SemiBold" /><Run Text=" from Task Scheduler? This can't be undone. Saving a copy first lets you import it again later." />
+                        </TextBlock>
+                        <WrapPanel ItemSpacing="8" LineSpacing="8">
+                          <Button Classes="neutral small" Content="Save a Copy First" Command="{Binding SaveCopyCommand}" />
+                          <Button Classes="danger small" Content="Delete Task" Command="{Binding ConfirmDeleteCommand}" />
+                          <Button Classes="neutral small" Content="Keep It" Command="{Binding CancelDeleteCommand}" />
+                        </WrapPanel>
+                      </StackPanel>
+                    </Border>
                     <Border Classes="banner error" IsVisible="{Binding HasProblem}" Margin="0,10,0,0">
                       <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
                     </Border>
@@ -347,6 +428,34 @@
                         <TextBlock Classes="secondary" Text="{Binding ResultDetail}" IsVisible="{Binding HasResultDetail}" TextWrapping="Wrap" />
                         <TextBlock Classes="muted" FontSize="12" Text="{Binding LastRunFull}" />
                         <TextBlock Classes="muted" FontSize="12" Text="{Binding ResultCode}" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Classes="detailSection">
+                      <StackPanel Spacing="6">
+                        <TextBlock Classes="h2" Text="Run History" />
+                        <StackPanel Spacing="8" IsVisible="{Binding HistoryOff}">
+                          <TextBlock Classes="secondary" TextWrapping="Wrap"
+                                     Text="Windows isn't keeping task history, so past runs can't be shown. Turn it on to record every run from now on." />
+                          <Button Classes="primary small" Content="Turn On History" Command="{Binding TurnOnHistoryCommand}" HorizontalAlignment="Left" />
+                        </StackPanel>
+                        <TextBlock Classes="muted" Text="Reading the history…" IsVisible="{Binding RunsLoading}" />
+                        <TextBlock Classes="muted" Text="No runs in the last 30 days." IsVisible="{Binding NoRuns}" />
+                        <ItemsControl ItemsSource="{Binding Runs}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RunLine">
+                              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,3">
+                                <StackPanel>
+                                  <TextBlock Text="{Binding WhenText}" FontWeight="SemiBold" FontSize="13" />
+                                  <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap">
+                                    <Run Text="{Binding CauseText}" /><Run Text="  " /><Run Text="{Binding TookText}" />
+                                  </TextBlock>
+                                </StackPanel>
+                                <c:Chip Grid.Column="1" Kind="{Binding Kind}" Content="{Binding WhatText}" VerticalAlignment="Top" MaxWidth="190" />
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                       </StackPanel>
                     </Border>
 

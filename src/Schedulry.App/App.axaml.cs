@@ -38,6 +38,23 @@ public partial class App : Application
             };
             Platform.EnableHistory = Elevation.EnableHistoryAsync;
             Platform.CopyText = text => _ = window.Clipboard?.SetTextAsync(text);
+            Platform.SaveTextFile = async (name, text) =>
+            {
+                var file = await window.StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+                {
+                    Title = "Save a Copy of the Task",
+                    SuggestedFileName = name,
+                    DefaultExtension = "xml",
+                    FileTypeChoices = [new Avalonia.Platform.Storage.FilePickerFileType("Task Scheduler XML") { Patterns = ["*.xml"] }],
+                });
+                if (file is null)
+                    return false;
+                await using var stream = await file.OpenWriteAsync();
+                // UTF-16 with a byte-order mark, as Task Scheduler itself exports, so its Import accepts it.
+                await using var writer = new StreamWriter(stream, new System.Text.UnicodeEncoding(bigEndian: false, byteOrderMark: true));
+                await writer.WriteAsync(text);
+                return true;
+            };
 
             Dispatcher.UIThread.UnhandledException += (_, e) =>
             {

@@ -46,7 +46,16 @@ public interface ISchedulerHost : IDisposable
     /// </summary>
     event Action<string>? TaskEvent;
 
+    /// <summary>
+    /// Runs recorded in the history log since <paramref name="since"/>, newest first: one task's,
+    /// or every task's when <paramref name="path"/> is null. Empty while the history log is off.
+    /// </summary>
+    IReadOnlyList<RunRecord> ReadRuns(string? path, DateTime since, int maxRuns);
+
     void Run(string path);
     void Stop(string path);
     void SetEnabled(string path, bool enabled);
+
+    /// <summary>Removes the task from Task Scheduler for good.</summary>
+    void Delete(string path);
 }
