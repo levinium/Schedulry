@@ -187,6 +187,77 @@ public sealed class DemoSchedulerHost : ISchedulerHost
         }
     }
 
+    public IReadOnlyList<string> Folders()
+    {
+        lock (_gate)
+        {
+            var folders = new SortedSet<string>(StringComparer.CurrentCultureIgnoreCase) { "\\" };
+            foreach (var folder in _entries.Values.Select(e => e.Task.Folder))
+                for (var f = folder; f != "\\"; f = f.LastIndexOf('\\') <= 0 ? "\\" : f[..f.LastIndexOf('\\')])
+                    folders.Add(f);
+            return folders.OrderBy(f => f == "\\" ? "" : f, StringComparer.CurrentCultureIgnoreCase).ToList();
+        }
+    }
+
+    public string BuildXml(TaskDraft draft) => DemoXml.For(Snapshot(draft));
+
+    static TaskSnapshot Snapshot(TaskDraft draft, TaskSnapshot? old = null) => (old ?? new TaskSnapshot { Path = draft.Path }) with
+    {
+        Path = draft.Path,
+        Description = string.IsNullOrWhiteSpace(draft.Description) ? null : draft.Description,
+        Author = old?.Author ?? @"CONTOSO\avery.lee",
+        Enabled = draft.Enabled,
+        RunAs = draft.RunAs,
+        Logon = draft.Logon,
+        HighestPrivileges = draft.HighestPrivileges,
+        Triggers = draft.Triggers.Select(t => t.Spec).ToList(),
+        Actions = draft.Actions.Select(a => a.Action).ToList(),
+        Settings = draft.Settings,
+    };
+
+    public void Save(TaskDraft draft, string? password)
+    {
+        if (draft.Problems() is [var first, ..])
+            throw new InvalidOperationException(first);
+        if (draft.NeedsPassword && string.IsNullOrEmpty(password))
+            throw new InvalidOperationException("The user name or password is incorrect.");
+        lock (_gate)
+        {
+            Entry? old = null;
+            if (draft.OriginalPath is { } original)
+            {
+                old = Get(original);
+                CheckCanChange(old.Task);
+            }
+            else if (!IsElevated && !string.Equals(draft.RunAs, CurrentUser, StringComparison.OrdinalIgnoreCase))
+                throw new UnauthorizedAccessException("Access is denied.");
+            if ((old is null || draft.IsMoved) && _entries.ContainsKey(draft.Path))
+                throw new InvalidOperationException($"There's already a task called \"{draft.Name}\" in {DraftChanges.FolderText(draft.Folder)}.");
+            if (old is not null)
+                _entries.Remove(draft.OriginalPath!);
+            var entry = old ?? new Entry { Task = Snapshot(draft) };
+            entry.Task = Snapshot(draft, old?.Task);
+            _entries[draft.Path] = entry;
+        }
+    }
+
+    public void Import(string folder, string name, string xml, string? password)
+    {
+        // Enough of the XML for a demo: the first program and its arguments.
+        var doc = XDocument.Parse(xml);
+        XNamespace ns = doc.Root?.Name.Namespace ?? XNamespace.None;
+        var exec = doc.Descendants(ns + "Exec").FirstOrDefault();
+        var draft = new TaskDraft
+        {
+            Folder = folder,
+            Name = name,
+            Description = doc.Descendants(ns + "Description").FirstOrDefault()?.Value,
+            RunAs = CurrentUser,
+            Actions = [new DraftAction(new ActionInfo(ActionKind.Program, exec?.Element(ns + "Command")?.Value ?? "", exec?.Element(ns + "Arguments")?.Value))],
+        };
+        Save(draft, password);
+    }
+
     public void Delete(string path)
     {
         lock (_gate)

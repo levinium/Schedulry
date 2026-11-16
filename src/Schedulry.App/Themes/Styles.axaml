@@ -319,6 +319,41 @@
   <Style Selector="GridSplitter.divider:pointerover /template/ Border#bar">
     <Setter Property="Background" Value="{DynamicResource Accent}" />
   </Style>
+  <!-- Editor -->
+  <Style Selector="Border.editorCard">
+    <Setter Property="Padding" Value="18,16" />
+  </Style>
+  <Style Selector="Border.subCard">
+    <Setter Property="Background" Value="{DynamicResource SubtleBg}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Divider}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="14,12" />
+  </Style>
+  <Style Selector="TextBlock.fieldLabel">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+  </Style>
+  <!-- Choices shown as cards: every option visible with what it means; the chosen one outlined. -->
+  <Style Selector="ListBox.options">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.options ListBoxItem">
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="Margin" Value="0,0,0,6" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}" />
+  </Style>
+  <Style Selector="ListBox.options ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NavSelectedBg}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+  </Style>
+  <Style Selector="ListBox.options ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+  </Style>
+
   <!-- Search box -->
   <Style Selector="TextBox.search">
     <Setter Property="CornerRadius" Value="6" />

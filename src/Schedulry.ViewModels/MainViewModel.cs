@@ -294,6 +294,85 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     void DismissHistoryBanner() => HistoryBannerDismissed = true;
 
+    // ---- Editor and import ----
+
+    /// <summary>The editor page, while open (it takes the place of the list and preview).</summary>
+    [ObservableProperty] public partial Editor.TaskEditorViewModel? Editor { get; private set; }
+    [ObservableProperty] public partial Editor.ImportViewModel? Import { get; private set; }
+    public bool IsEditing => Editor is not null;
+    public bool IsBrowsing => Editor is null;
+    public bool IsImporting => Import is not null;
+    string? _selectWhenSeen;
+
+    partial void OnEditorChanged(Editor.TaskEditorViewModel? value)
+    {
+        OnPropertyChanged(nameof(IsEditing));
+        OnPropertyChanged(nameof(IsBrowsing));
+    }
+
+    partial void OnImportChanged(Editor.ImportViewModel? value) => OnPropertyChanged(nameof(IsImporting));
+
+    /// <summary>The folder a new task goes in by default: the one being looked at.</summary>
+    string CurrentFolder => SelectedFolder is { Path: not "\\" } folder ? folder.Path : "\\";
+
+    [RelayCommand]
+    void NewTask() => Editor = new Editor.TaskEditorViewModel(this, null, folder: CurrentFolder);
+
+    public void EditTask(TaskSnapshot task) => Editor = new Editor.TaskEditorViewModel(this, task);
+
+    public void CopyTask(TaskSnapshot task) => Editor = new Editor.TaskEditorViewModel(this, task, copy: true);
+
+    /// <summary>Back from the editor. A saved task is selected as soon as the monitor sees it.</summary>
+    public void CloseEditor(string? savedPath)
+    {
+        Editor = null;
+        AfterSave(savedPath);
+    }
+
+    [RelayCommand]
+    async Task ImportTaskAsync()
+    {
+        if (await Platform.OpenTextFile("Import a Task", "Task Scheduler XML", "*.xml") is not { } file)
+            return;
+        Import = new Editor.ImportViewModel(this, file.Name, file.Text, CurrentFolder);
+    }
+
+    public void CloseImport(string? importedPath)
+    {
+        Import = null;
+        AfterSave(importedPath);
+    }
+
+    void AfterSave(string? path)
+    {
+        if (path is null)
+            return;
+        _selectWhenSeen = path;
+        Monitor.Poke();
+        SelectIfSeen();
+    }
+
+    void SelectIfSeen()
+    {
+        if (_selectWhenSeen is not { } path || !_rows.TryGetValue(path, out var row))
+            return;
+        _selectWhenSeen = null;
+        ShowActivity = false;
+        if (!Rows.Contains(row))
+        {
+            // Somewhere the list isn't showing: show everything so it can be selected.
+            SelectedView = Views[0];
+            SearchText = "";
+            if (SelectedCollection is not null)
+                SelectedCollection = null;
+            else
+                SelectedFolder = Folders.FirstOrDefault();
+            if (row.Task.IsWindowsTask)
+                ShowWindowsTasks = true;
+        }
+        SelectedRow = row;
+    }
+
     // ---- Recent activity ----
 
     /// <summary>Starts and finishes seen since the app opened, newest first, for when the history log is off.</summary>
@@ -659,7 +738,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (foldersChanged)
             RebuildFolders();
         RebuildCounts();
-        UpdateEmptyText();
+        UpdateEmptyText();        SelectIfSeen();
+
     }
 
     /// <summary>Keeps "Running 0:42" and "In 3 min" moving between monitor ticks. The app calls it every second.</summary>

@@ -64,4 +64,19 @@ public interface ISchedulerHost : IDisposable
 
     /// <summary>Removes the task from Task Scheduler for good.</summary>
     void Delete(string path);
+
+    /// <summary>Every folder, "\" first, including empty ones (for the editor's folder list).</summary>
+    IReadOnlyList<string> Folders();
+
+    /// <summary>The XML Task Scheduler would store for this draft, without saving anything.</summary>
+    string BuildXml(TaskDraft draft);
+
+    /// <summary>
+    /// Creates or updates the task. A draft whose path changed is saved at the new path, then the
+    /// old one removed. <paramref name="password"/> is passed straight to Windows and never kept.
+    /// </summary>
+    void Save(TaskDraft draft, string? password);
+
+    /// <summary>Registers a task from Task Scheduler XML (a file exported from here or the old window).</summary>
+    void Import(string folder, string name, string xml, string? password);
 }

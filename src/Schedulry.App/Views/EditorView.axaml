@@ -1,0 +1,360 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ed="using:Schedulry.ViewModels.Editor"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="Schedulry.App.Views.EditorView"
+             x:DataType="ed:TaskEditorViewModel">
+
+  <UserControl.DataTemplates>
+    <!-- A length of time: number and unit side by side. -->
+    <DataTemplate DataType="ed:DurationEditor">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <NumericUpDown Value="{Binding Amount}" Minimum="1" Maximum="9999" Increment="1" FormatString="0" Width="110" />
+        <ComboBox ItemsSource="{x:Static ed:DurationEditor.Units}" SelectedItem="{Binding Unit}" MinWidth="110" />
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <Grid RowDefinitions="Auto,*">
+    <!-- Title and the two ways out. -->
+    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock Classes="h1" Text="{Binding Title}" />
+        <TextBlock Classes="muted" Text="Nothing is saved until you select the button on the right. The review beside the form shows exactly what will change." TextWrapping="Wrap" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button Classes="neutral" Content="Cancel" Command="{Binding CancelCommand}" />
+        <Button Classes="primary" Content="{Binding SaveText}" Command="{Binding SaveCommand}" />
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,14,430">
+      <ScrollViewer>
+        <StackPanel Spacing="12" Margin="0,0,10,12">
+
+          <!-- The task -->
+          <Border Classes="card editorCard">
+            <StackPanel Spacing="8">
+              <TextBlock Classes="h2" Text="Task" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <StackPanel Spacing="4">
+                  <TextBlock Classes="fieldLabel" Text="Name" />
+                  <TextBox Text="{Binding Name}" Watermark="Nightly backup" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4">
+                  <TextBlock Classes="fieldLabel" Text="Folder" />
+                  <AutoCompleteBox Text="{Binding Folder}" ItemsSource="{Binding Folders}" FilterMode="ContainsOrdinal" MinimumPrefixLength="0"
+                                   Watermark="\ for the top folder; a new name makes a folder" />
+                </StackPanel>
+              </Grid>
+              <TextBlock Classes="fieldLabel" Text="Description" />
+              <TextBox Text="{Binding Description}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56" Watermark="What it's for, so the next person knows" />
+              <CheckBox IsChecked="{Binding Enabled}" Content="Turned on (it runs when its triggers say)" />
+            </StackPanel>
+          </Border>
+
+          <!-- Triggers -->
+          <Border Classes="card editorCard">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="h2" Text="When It Runs" />
+              <TextBlock Classes="muted" Text="No triggers means it only runs when someone selects Run Now." IsVisible="{Binding NoTriggers}" />
+              <ItemsControl ItemsSource="{Binding Triggers}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="ed:TriggerEditor">
+                    <Border Classes="subCard" Margin="0,0,0,10">
+                      <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                          <StackPanel>
+                            <TextBlock FontWeight="SemiBold" Text="{Binding Number, StringFormat='Trigger {0}'}" />
+                            <TextBlock Classes="secondary" Text="{Binding Summary}" TextWrapping="Wrap" />
+                          </StackPanel>
+                          <Button Grid.Column="1" Classes="neutral small" Content="Remove" Command="{Binding RemoveCommand}" VerticalAlignment="Top" />
+                        </Grid>
+
+                        <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsKept}"
+                                   Text="This kind of trigger can't be edited here. It will be kept exactly as it is." />
+
+                        <StackPanel Spacing="8" IsVisible="{Binding IsEditable}">
+                          <WrapPanel ItemSpacing="12" LineSpacing="8">
+                            <StackPanel Spacing="4">
+                              <TextBlock Classes="fieldLabel" Text="Kind" />
+                              <ComboBox ItemsSource="{x:Static ed:TriggerEditor.Kinds}" SelectedItem="{Binding Kind}" MinWidth="230" />
+                            </StackPanel>
+                            <StackPanel Spacing="4" IsVisible="{Binding HasStart}">
+                              <TextBlock Classes="fieldLabel" Text="Starting" />
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <CalendarDatePicker SelectedDate="{Binding StartDate}" Width="150" />
+                                <TimePicker SelectedTime="{Binding StartTime}" MinuteIncrement="1" />
+                              </StackPanel>
+                            </StackPanel>
+                            <StackPanel Spacing="4" IsVisible="{Binding IsDaily}">
+                              <TextBlock Classes="fieldLabel" Text="Every" />
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <NumericUpDown Value="{Binding Interval}" Minimum="1" Maximum="365" FormatString="0" Width="110" />
+                                <TextBlock Text="days" VerticalAlignment="Center" />
+                              </StackPanel>
+                            </StackPanel>
+                            <StackPanel Spacing="4" IsVisible="{Binding IsWeekly}">
+                              <TextBlock Classes="fieldLabel" Text="Every" />
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <NumericUpDown Value="{Binding Interval}" Minimum="1" Maximum="52" FormatString="0" Width="110" />
+                                <TextBlock Text="weeks" VerticalAlignment="Center" />
+                              </StackPanel>
+                            </StackPanel>
+                          </WrapPanel>
+
+                          <StackPanel Spacing="4" IsVisible="{Binding HasWeekdays}">
+                            <TextBlock Classes="fieldLabel" Text="On" />
+                            <WrapPanel ItemSpacing="10">
+                              <CheckBox Content="Mon" IsChecked="{Binding Monday}" />
+                              <CheckBox Content="Tue" IsChecked="{Binding Tuesday}" />
+                              <CheckBox Content="Wed" IsChecked="{Binding Wednesday}" />
+                              <CheckBox Content="Thu" IsChecked="{Binding Thursday}" />
+                              <CheckBox Content="Fri" IsChecked="{Binding Friday}" />
+                              <CheckBox Content="Sat" IsChecked="{Binding Saturday}" />
+                              <CheckBox Content="Sun" IsChecked="{Binding Sunday}" />
+                            </WrapPanel>
+                          </StackPanel>
+
+                          <StackPanel Spacing="4" IsVisible="{Binding IsMonthlyWeekday}">
+                            <TextBlock Classes="fieldLabel" Text="Which week of the month" />
+                            <WrapPanel ItemSpacing="10">
+                              <CheckBox Content="First" IsChecked="{Binding First}" />
+                              <CheckBox Content="Second" IsChecked="{Binding Second}" />
+                              <CheckBox Content="Third" IsChecked="{Binding Third}" />
+                              <CheckBox Content="Fourth" IsChecked="{Binding Fourth}" />
+                              <CheckBox Content="Last" IsChecked="{Binding Last}" />
+                            </WrapPanel>
+                          </StackPanel>
+
+                          <StackPanel Spacing="4" IsVisible="{Binding IsMonthly}">
+                            <TextBlock Classes="fieldLabel" Text="Days of the month (numbers, separated by commas)" />
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                              <TextBox Text="{Binding DaysOfMonth}" Width="220" Watermark="1, 15" />
+                              <CheckBox Content="and the last day" IsChecked="{Binding LastDayOfMonth}" />
+                            </StackPanel>
+                          </StackPanel>
+
+                          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasUser}">
+                            <CheckBox Content="Only for" IsChecked="{Binding SpecificUser}" VerticalAlignment="Center" />
+                            <TextBox Text="{Binding UserId}" Width="240" Watermark="DOMAIN\name (otherwise anyone)" IsEnabled="{Binding SpecificUser}" />
+                          </StackPanel>
+
+                          <StackPanel Spacing="4" IsVisible="{Binding IsSession}">
+                            <TextBlock Classes="fieldLabel" Text="When the person" />
+                            <ComboBox ItemsSource="{x:Static ed:TriggerEditor.SessionChanges}" SelectedItem="{Binding SessionChange}" MinWidth="240" />
+                          </StackPanel>
+
+                          <WrapPanel ItemSpacing="12" LineSpacing="8" IsVisible="{Binding IsEvent}">
+                            <StackPanel Spacing="4">
+                              <TextBlock Classes="fieldLabel" Text="Log" />
+                              <TextBox Text="{Binding EventLog}" Width="200" Watermark="System" />
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                              <TextBlock Classes="fieldLabel" Text="Source (optional)" />
+                              <TextBox Text="{Binding EventSource}" Width="200" Watermark="disk" />
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                              <TextBlock Classes="fieldLabel" Text="Event ID (optional)" />
+                              <TextBox Text="{Binding EventId}" Width="120" Watermark="153" />
+                            </StackPanel>
+                          </WrapPanel>
+
+                          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding CanDelay}">
+                            <CheckBox Content="Wait" IsChecked="{Binding HasDelay}" VerticalAlignment="Center" />
+                            <ContentControl Content="{Binding Delay}" IsEnabled="{Binding HasDelay}" />
+                            <TextBlock Text="first" VerticalAlignment="Center" />
+                          </StackPanel>
+
+                          <StackPanel Spacing="6" IsVisible="{Binding CanRepeat}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                              <CheckBox Content="Then repeat every" IsChecked="{Binding Repeat}" VerticalAlignment="Center" />
+                              <ContentControl Content="{Binding RepeatEvery}" IsEnabled="{Binding Repeat}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding Repeat}" Margin="28,0,0,0">
+                              <CheckBox Content="Forever" IsChecked="{Binding RepeatForever}" VerticalAlignment="Center" />
+                              <TextBlock Text="or for" VerticalAlignment="Center" IsVisible="{Binding RepeatLimited}" />
+                              <ContentControl Content="{Binding RepeatFor}" IsVisible="{Binding RepeatLimited}" />
+                            </StackPanel>
+                          </StackPanel>
+
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <CheckBox Content="Stop using this trigger after" IsChecked="{Binding Expires}" VerticalAlignment="Center" />
+                            <CalendarDatePicker SelectedDate="{Binding EndDate}" Width="150" IsEnabled="{Binding Expires}" />
+                            <TimePicker SelectedTime="{Binding EndTime}" MinuteIncrement="1" IsEnabled="{Binding Expires}" />
+                          </StackPanel>
+
+                          <CheckBox Content="This trigger is on" IsChecked="{Binding Enabled}" />
+                        </StackPanel>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Content="Add a Trigger" Command="{Binding AddTriggerCommand}" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Border>
+
+          <!-- Actions -->
+          <Border Classes="card editorCard">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="h2" Text="What It Does" />
+              <ItemsControl ItemsSource="{Binding Actions}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="ed:ActionEditor">
+                    <Border Classes="subCard" Margin="0,0,0,10">
+                      <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock FontWeight="SemiBold" Text="{Binding Number, StringFormat='Program {0}'}" VerticalAlignment="Center" />
+                          <Button Grid.Column="1" Classes="neutral small" Content="Remove" Command="{Binding RemoveCommand}" />
+                        </Grid>
+                        <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsKept}" Text="{Binding KeptSummary, StringFormat='{}{0}. Kept exactly as it is.'}" />
+                        <StackPanel Spacing="4" IsVisible="{Binding IsProgram}">
+                          <TextBlock Classes="fieldLabel" Text="Program or script" />
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBox Text="{Binding Program}" Watermark="C:\Program Files\PowerShell\7\pwsh.exe" />
+                            <Button Grid.Column="1" Classes="neutral" Content="Browse…" Command="{Binding BrowseCommand}" />
+                          </Grid>
+                          <TextBlock Classes="fieldLabel" Text="Arguments (optional)" />
+                          <TextBox Text="{Binding Arguments}" Watermark="-NoProfile -File &quot;C:\Scripts\Backup.ps1&quot;" />
+                          <TextBlock Classes="fieldLabel" Text="Start in (optional)" />
+                          <TextBox Text="{Binding StartIn}" Watermark="C:\Scripts" />
+                        </StackPanel>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Content="Add a Program" Command="{Binding AddActionCommand}" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Border>
+
+          <!-- Account -->
+          <Border Classes="card editorCard">
+            <StackPanel Spacing="8">
+              <TextBlock Classes="h2" Text="Runs As" />
+              <TextBlock Classes="fieldLabel" Text="Account" />
+              <TextBox Text="{Binding RunAs}" Watermark="{Binding RunAsHint}" MaxWidth="420" HorizontalAlignment="Left" Width="420" />
+              <TextBlock Classes="fieldLabel" Text="How it signs in" />
+              <ListBox Classes="options" ItemsSource="{Binding LogonChoices}" SelectedItem="{Binding Logon}" AutoScrollToSelectedItem="False">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Spacing="2" x:DataType="ed:LogonChoice">
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                      <TextBlock Classes="secondary" Text="{Binding Explanation}" TextWrapping="Wrap" FontSize="12" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel Spacing="4" IsVisible="{Binding NeedsPassword}">
+                <TextBlock Classes="fieldLabel" Text="The account's password" />
+                <TextBox Text="{Binding Password}" PasswordChar="•" Width="320" HorizontalAlignment="Left" />
+                <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
+                           Text="Windows needs it every time a task like this is saved. Schedulry hands it to Windows and doesn't keep it." />
+              </StackPanel>
+              <CheckBox IsChecked="{Binding HighestPrivileges}" Content="Run with full administrator rights" />
+            </StackPanel>
+          </Border>
+
+          <!-- Settings -->
+          <Border Classes="card editorCard">
+            <StackPanel Spacing="8">
+              <TextBlock Classes="h2" Text="Settings" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <CheckBox Content="Stop it if it runs longer than" IsChecked="{Binding LimitRunTime}" VerticalAlignment="Center" />
+                <ContentControl Content="{Binding StopAfter}" IsEnabled="{Binding LimitRunTime}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="If it's already running when it's due:" VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{x:Static ed:TaskEditorViewModel.InstancePolicies}" SelectedItem="{Binding MultipleInstances}" MinWidth="300" />
+              </StackPanel>
+              <CheckBox Content="If a start was missed (computer off), run as soon as possible afterwards" IsChecked="{Binding RunMissedStart}" />
+              <WrapPanel ItemSpacing="8" LineSpacing="6">
+                <CheckBox Content="If it fails, try again every" IsChecked="{Binding RetryOnFailure}" VerticalAlignment="Center" />
+                <ContentControl Content="{Binding RetryEvery}" IsEnabled="{Binding RetryOnFailure}" />
+                <TextBlock Text="up to" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding RetryCount}" Minimum="1" Maximum="999" FormatString="0" Width="110" IsEnabled="{Binding RetryOnFailure}" />
+                <TextBlock Text="times" VerticalAlignment="Center" />
+              </WrapPanel>
+              <TextBlock Classes="fieldLabel" Text="Only run" Margin="0,6,0,0" />
+              <CheckBox Content="on mains power (not on battery)" IsChecked="{Binding OnlyOnAcPower}" />
+              <CheckBox Content="when the computer is idle" IsChecked="{Binding OnlyWhenIdle}" />
+              <CheckBox Content="with a network connection" IsChecked="{Binding OnlyWithNetwork}" />
+              <TextBlock Classes="fieldLabel" Text="Also" Margin="0,6,0,0" />
+              <CheckBox Content="Wake the computer from sleep to run it" IsChecked="{Binding WakeToRun}" />
+              <CheckBox Content="Allow running it by hand (Run Now)" IsChecked="{Binding AllowRunOnDemand}" />
+              <CheckBox Content="Hide it in the old Task Scheduler window" IsChecked="{Binding Hidden}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- The review: what will change, or what's in the way; and the same task as PowerShell or XML. -->
+      <Border Grid.Column="2" Classes="card" Padding="16">
+        <Grid RowDefinitions="Auto,*">
+          <Border Classes="tabs" HorizontalAlignment="Left" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="2">
+              <Button Classes="tab" Classes.selected="{Binding ShowChangesTab}" Content="Changes" Command="{Binding ShowTabCommand}" CommandParameter="{x:Static ed:ReviewTab.Changes}" />
+              <Button Classes="tab" Classes.selected="{Binding ShowScriptTab}" Content="PowerShell" Command="{Binding ShowTabCommand}" CommandParameter="{x:Static ed:ReviewTab.PowerShell}" />
+              <Button Classes="tab" Classes.selected="{Binding ShowXmlTab}" Content="XML" Command="{Binding ShowTabCommand}" CommandParameter="{x:Static ed:ReviewTab.Xml}" />
+            </StackPanel>
+          </Border>
+
+          <ScrollViewer Grid.Row="1" IsVisible="{Binding ShowChangesTab}">
+            <StackPanel Spacing="10">
+              <Border Classes="banner error" IsVisible="{Binding HasSaveProblem}">
+                <TextBlock Text="{Binding SaveProblem}" TextWrapping="Wrap" />
+              </Border>
+              <Border Classes="banner info" IsVisible="{Binding RightsNote, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Text="{Binding RightsNote}" TextWrapping="Wrap" />
+              </Border>
+              <StackPanel Spacing="6" IsVisible="{Binding HasProblems}">
+                <TextBlock Classes="h2" Text="Before It Can Be Saved" />
+                <ItemsControl ItemsSource="{Binding Problems}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,2">
+                        <ic:FluentIcon Icon="Warning" FontSize="14" Foreground="{DynamicResource BadgeDangerDot}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                        <TextBlock Grid.Column="1" Text="{Binding}" TextWrapping="Wrap" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+              <StackPanel Spacing="6">
+                <TextBlock Classes="h2" Text="What Saving Will Do" />
+                <TextBlock Classes="muted" Text="Nothing has changed yet." IsVisible="{Binding NoChanges}" />
+                <ItemsControl ItemsSource="{Binding Changes}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,2">
+                        <ic:FluentIcon Icon="Edit" FontSize="14" Foreground="{DynamicResource Accent}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                        <TextBlock Grid.Column="1" Text="{Binding}" TextWrapping="Wrap" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+
+          <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding !ShowChangesTab}">
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,8,0"
+                         Text="The same task, ready to run or keep. Updates as you edit." />
+              <Button Grid.Column="1" Classes="neutral small" Content="Copy" Command="{Binding CopyPreviewCommand}" />
+            </Grid>
+            <Border Grid.Row="1" Background="{DynamicResource SubtleBg}" CornerRadius="6" Padding="10">
+              <ScrollViewer>
+                <Panel>
+                  <SelectableTextBlock Text="{Binding Script}" IsVisible="{Binding ShowScriptTab}" TextWrapping="Wrap" FontFamily="Cascadia Mono,Consolas,monospace" FontSize="11.5" />
+                  <SelectableTextBlock Text="{Binding Xml}" IsVisible="{Binding ShowXmlTab}" TextWrapping="Wrap" FontFamily="Cascadia Mono,Consolas,monospace" FontSize="11.5" />
+                </Panel>
+              </ScrollViewer>
+            </Border>
+          </Grid>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

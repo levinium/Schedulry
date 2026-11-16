@@ -6,8 +6,8 @@ pressing Refresh, and it says what each task does in plain words.
 
 ![Schedulry, light theme](docs/screenshots/main-light.png)
 
-**Status: early development.** Browsing, live status, run history, stars and groups, Run, End, Delete and turning tasks on or off work
-today. Editing, remote computers, notifications and installers are on the way.
+**Status: early development.** Browsing, live status, run history, editing, creating and importing tasks, stars and groups, Run, End and Delete work
+today. Remote computers, notifications and installers are on the way.
 
 ## What it does differently
 
@@ -17,6 +17,7 @@ today. Editing, remote computers, notifications and installers are on the way.
 | `0x41301`, `0x800710E0`, `0x80070569` | "Still running", "Refused to start", "Sign-in refused: the account lacks the Log on as a batch job right", with what to do about it |
 | Triggers listed as separate rows in a dialog | "Every weekday at 6:00 AM, then every 2 minutes for 12 hours", plus the next five run times |
 | History hidden in a tab of event IDs, off by default | Each task's runs as a list (when, why, how long, how it ended), and a Recent Activity view of every run in the last day |
+| Nested dialogs: a tab per part, a dialog per trigger, a password prompt you can't predict | One page, every field visible; beside it, what saving will change in sentences, plus the same task as PowerShell and XML |
 | One folder at a time | Search across every folder by name, program, account or description; filter by Running, Failed, Needs a look, Turned off, Never run |
 | "Run whether user is logged on or not" and "Do not store password" | What that means for this task, in a sentence |
 | Windows' own 200 tasks mixed in with yours | Hidden until you switch them on |
@@ -28,6 +29,8 @@ today. Editing, remote computers, notifications and installers are on the way.
 ![Schedulry, a group of the person's own](docs/screenshots/group-light.png)
 
 ![Schedulry, Recent Activity](docs/screenshots/activity-light.png)
+
+![Schedulry, the task editor](docs/screenshots/editor-light.png)
 
 ## Running it
 

@@ -20,6 +20,13 @@ public static class Platform
 
     public static Action<string> CopyText { get; set; } = _ => { };
 
+    /// <summary>Asks for a file to use (title); its full path, or null if the person cancelled.</summary>
+    public static Func<string, Task<string?>> PickFile { get; set; } = _ => Task.FromResult<string?>(null);
+
+    /// <summary>Asks for a file to read (title, file type, pattern); its name and text, or null.</summary>
+    public static Func<string, string, string, Task<(string Name, string Text)?>> OpenTextFile { get; set; } =
+        (_, _, _) => Task.FromResult<(string, string)?>(null);
+
     /// <summary>Asks where to save a text file (suggested name, contents). False if the person cancelled.</summary>
     public static Func<string, string, Task<bool>> SaveTextFile { get; set; } = (_, _) => Task.FromResult(false);
 }

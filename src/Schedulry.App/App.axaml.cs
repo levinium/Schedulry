@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input.Platform;
+using Avalonia.Platform.Storage;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Schedulry.Core;
@@ -38,6 +39,26 @@ public partial class App : Application
             };
             Platform.EnableHistory = Elevation.EnableHistoryAsync;
             Platform.CopyText = text => _ = window.Clipboard?.SetTextAsync(text);
+            Platform.PickFile = async title =>
+            {
+                var files = await window.StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions { Title = title, AllowMultiple = false });
+                return files.Count == 0 ? null : files[0].TryGetLocalPath();
+            };
+            Platform.OpenTextFile = async (title, typeName, pattern) =>
+            {
+                var files = await window.StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+                {
+                    Title = title,
+                    AllowMultiple = false,
+                    FileTypeFilter = [new Avalonia.Platform.Storage.FilePickerFileType(typeName) { Patterns = [pattern] }],
+                });
+                if (files.Count == 0)
+                    return null;
+                await using var stream = await files[0].OpenReadAsync();
+                // Task Scheduler writes UTF-16 with a byte-order mark; the reader follows whatever mark there is.
+                using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+                return (files[0].Name, await reader.ReadToEndAsync());
+            };
             Platform.SaveTextFile = async (name, text) =>
             {
                 var file = await window.StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions

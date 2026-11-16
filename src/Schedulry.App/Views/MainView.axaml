@@ -3,6 +3,8 @@
              xmlns:vm="using:Schedulry.ViewModels"
              xmlns:c="using:Schedulry.App.Controls"
              xmlns:ic="using:FluentIcons.Avalonia"
+             xmlns:views="using:Schedulry.App.Views"
+             xmlns:ed="using:Schedulry.ViewModels.Editor"
              x:Class="Schedulry.App.Views.MainView"
              x:DataType="vm:MainViewModel">
 
@@ -37,6 +39,13 @@
       </Grid>
 
       <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <Button Classes="primary" Command="{Binding NewTaskCommand}" IsEnabled="{Binding IsBrowsing}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <ic:FluentIcon Icon="Add" FontSize="14" />
+            <TextBlock Text="New Task" />
+          </StackPanel>
+        </Button>
+        <Button Classes="neutral" Content="Import…" Command="{Binding ImportTaskCommand}" IsEnabled="{Binding IsBrowsing}" />
         <ToggleSwitch IsChecked="{Binding ShowWindowsTasks}" OnContent="Showing Windows tasks" OffContent="Show Windows tasks" />
         <TextBlock Classes="secondary" Text="Sort by" VerticalAlignment="Center" />
         <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort}" MinWidth="120">
@@ -57,6 +66,33 @@
 
     <!-- Banners: admin rights, history log, a problem reading. -->
     <StackPanel Grid.Row="1" Margin="16,0,16,8" Spacing="8">
+      <Border Classes="card" Padding="16,12" IsVisible="{Binding IsImporting}">
+        <StackPanel Spacing="8" DataContext="{Binding Import}" x:DataType="ed:ImportViewModel">
+          <TextBlock Classes="h2" Text="{Binding FileName, StringFormat='Import {0}'}" />
+          <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Text="The task is added exactly as the file describes it. Choose its name and folder." />
+          <WrapPanel ItemSpacing="12" LineSpacing="8">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="fieldLabel" Text="Name" />
+              <TextBox Text="{Binding Name}" Width="280" />
+            </StackPanel>
+            <StackPanel Spacing="4">
+              <TextBlock Classes="fieldLabel" Text="Folder" />
+              <AutoCompleteBox Text="{Binding Folder}" ItemsSource="{Binding Folders}" FilterMode="ContainsOrdinal" MinimumPrefixLength="0" Width="280" />
+            </StackPanel>
+            <StackPanel Spacing="4" IsVisible="{Binding NeedsPassword}">
+              <TextBlock Classes="fieldLabel" Text="The account's password (not kept)" />
+              <TextBox Text="{Binding Password}" PasswordChar="•" Width="240" />
+            </StackPanel>
+          </WrapPanel>
+          <Border Classes="banner error" IsVisible="{Binding HasProblem}">
+            <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
+          </Border>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Classes="primary" Content="Import Task" Command="{Binding ImportCommand}" />
+            <Button Classes="neutral" Content="Cancel" Command="{Binding CancelCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
       <Border Classes="banner error" IsVisible="{Binding HasLiveProblem}">
         <TextBlock Text="{Binding LiveProblem}" TextWrapping="Wrap" />
       </Border>
@@ -85,7 +121,7 @@
     </StackPanel>
 
     <!-- Body: sidebar | list | preview -->
-    <Grid Grid.Row="2" Name="BodyGrid" ColumnDefinitions="196,12,*,12,360" Margin="16,0,16,16">
+    <Grid Grid.Row="2" Name="BodyGrid" ColumnDefinitions="196,12,*,12,360" Margin="16,0,16,16" IsVisible="{Binding IsBrowsing}">
 
       <Border Classes="card" Background="{DynamicResource SidebarBg}">
         <ScrollViewer>
@@ -368,6 +404,8 @@
                         </StackPanel>
                       </Button>
                       <Button Content="Turn On" Command="{Binding TurnOnCommand}" IsVisible="{Binding !Row.Task.Enabled}" />
+                      <Button Classes="neutral" Content="Edit" Command="{Binding EditCommand}" />
+                      <Button Classes="neutral" Content="Copy…" Command="{Binding CopyCommand}" />
                       <Button Classes="neutral" Content="Delete…" Command="{Binding AskDeleteCommand}" />
                     </WrapPanel>
                     <TextBlock Classes="muted" FontSize="12" Text="{Binding ActionNote}" IsVisible="{Binding HasActionNote}" TextWrapping="Wrap" Margin="0,8,0,0" />
@@ -535,5 +573,6 @@
         </Grid>
       </Border>
     </Grid>
-  </Grid>
+    <!-- The editor takes the place of the sidebar, list and preview while it's open. -->
+    <views:EditorView Grid.Row="2" Margin="16,0,16,16" DataContext="{Binding Editor}" IsVisible="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).IsEditing}" />  </Grid>
 </UserControl>

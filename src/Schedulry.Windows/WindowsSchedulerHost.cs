@@ -12,7 +12,7 @@ namespace Schedulry.Windows;
 /// its own connection: the monitor reads on its thread while buttons act on pool threads, and COM
 /// objects are not passed between them.
 /// </summary>
-public sealed class WindowsSchedulerHost : ISchedulerHost
+public sealed partial class WindowsSchedulerHost : ISchedulerHost
 {
     public const string HistoryLog = "Microsoft-Windows-TaskScheduler/Operational";
 

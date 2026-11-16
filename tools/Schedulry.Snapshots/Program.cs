@@ -60,6 +60,22 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         vm.Detail!.AskDeleteCommand.Execute(null);
     });
 
+    // The editor: an existing task with a few changes made, then its PowerShell.
+    Render($"editor-{suffix}", new DemoSchedulerHost(() => moment, elevated: true), vm =>
+    {
+        vm.EditTask(vm.Rows.First(r => r.Name == "Sync payroll exports").Task);
+        var editor = vm.Editor!;
+        editor.Triggers[0].Friday = false;
+        editor.Logon = editor.LogonChoices.First(c => c.Kind == Schedulry.Core.LogonKind.Password);
+        editor.LimitRunTime = false;
+    });
+
+    Render($"editor-script-{suffix}", new DemoSchedulerHost(() => moment, elevated: true), vm =>
+    {
+        vm.EditTask(vm.Rows.First(r => r.Name == "Clear temp folders").Task);
+        vm.Editor!.Tab = Schedulry.ViewModels.Editor.ReviewTab.PowerShell;
+    });
+
     Render($"windows-tasks-{suffix}", new DemoSchedulerHost(() => moment, elevated: true, historyEnabled: true), vm =>
     {
         vm.ShowWindowsTasks = true;

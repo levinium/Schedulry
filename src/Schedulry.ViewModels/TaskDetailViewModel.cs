@@ -43,7 +43,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject, IDisposable
     [ObservableProperty] public partial string RunAsExplanation { get; private set; } = "";
     [ObservableProperty] public partial string? ActionNote { get; private set; }
     [ObservableProperty] public partial string? Problem { get; private set; }
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(EndCommand), nameof(TurnOnCommand), nameof(TurnOffCommand), nameof(AskDeleteCommand))]
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(EndCommand), nameof(TurnOnCommand), nameof(TurnOffCommand), nameof(AskDeleteCommand), nameof(EditCommand))]
     public partial bool Busy { get; private set; }
 
     // ---- Run history ----
@@ -91,6 +91,16 @@ public sealed partial class TaskDetailViewModel : ObservableObject, IDisposable
     [RelayCommand]
     Task TurnOnHistoryAsync() => _shell.TurnOnHistoryCommand.ExecuteAsync(null);
 
+    // ---- Edit and copy ----
+
+    bool CanEdit() => !Busy && CanChange;
+
+    [RelayCommand(CanExecute = nameof(CanEdit))]
+    void Edit() => _shell.EditTask(Task);
+
+    /// <summary>A new task starting from this one; allowed even for tasks this account can't change.</summary>
+    [RelayCommand]
+    void Copy() => _shell.CopyTask(Task);
     // ---- Delete ----
 
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(AskDeleteCommand))] public partial bool IsConfirmingDelete { get; private set; }
@@ -244,6 +254,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject, IDisposable
         TurnOnCommand.NotifyCanExecuteChanged();
         TurnOffCommand.NotifyCanExecuteChanged();
         AskDeleteCommand.NotifyCanExecuteChanged();
+        EditCommand.NotifyCanExecuteChanged();
         _ = LoadNextRunsAsync();
         _ = LoadRunsAsync();
     }
