@@ -23,7 +23,7 @@ today, on this computer or another one on the network. Notifications and install
 | Windows' own 200 tasks mixed in with yours | Hidden until you switch them on |
 | Columns you can't make wider | Drag column edges and headers, and the divider beside the preview; your layout is remembered |
 | Folders are the only way to arrange tasks, and moving one changes it | Star tasks and put them in your own groups (a task can be in several); kept by Schedulry, so the tasks themselves never change |
-| Connect to Another Computer, then type the name again next time; "The RPC server is unavailable" | Computers you've used are one click away (with the account, never a password), and a failure says what to check: the name, the firewall rule, the account |
+| Connect to Another Computer, then type the name again next time; "The RPC server is unavailable" | Computers you've used are one click away (with the account; a password only if you tick Remember, kept in Windows Credential Manager), and a failure says what to check: the name, the firewall rule, the account |
 
 ![Schedulry, dark theme, Windows' own tasks shown](docs/screenshots/windows-tasks-dark.png)
 

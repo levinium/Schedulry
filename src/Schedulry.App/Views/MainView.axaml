@@ -90,7 +90,7 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:ComputerRow">
-                <Border Classes="subCard" Width="250" Padding="12,8">
+                <Border Classes="subCard" Width="270" Padding="12,8">
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                     <ic:FluentIcon Icon="Desktop" FontSize="18" VerticalAlignment="Center" IsVisible="{Binding IsThisComputer}"
                                    Foreground="{DynamicResource TextMuted}" />
@@ -98,7 +98,11 @@
                                    Foreground="{DynamicResource TextMuted}" />
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                       <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Classes="muted" FontSize="12" Text="{Binding Detail}" TextTrimming="CharacterEllipsis" />
+                      <Grid ColumnDefinitions="Auto,*">
+                        <ic:FluentIcon Icon="Key" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center" Foreground="{DynamicResource TextMuted}"
+                                       IsVisible="{Binding HasSavedPassword}" />
+                        <TextBlock Grid.Column="1" Classes="muted" FontSize="12" Text="{Binding Detail}" TextTrimming="CharacterEllipsis" />
+                      </Grid>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                       <c:Chip Kind="Success" Content="Showing" IsVisible="{Binding IsCurrent}" />
@@ -129,12 +133,14 @@
               <TextBox Text="{Binding Account}" Watermark="DOMAIN\name" Width="200" />
             </StackPanel>
             <StackPanel Spacing="4" IsVisible="{Binding UseOtherAccount}">
-              <TextBlock Classes="muted" FontSize="12" Text="Password (not kept)" />
+              <TextBlock Classes="muted" FontSize="12" Text="Password" />
               <TextBox Text="{Binding Password}" PasswordChar="•" Width="200" />
             </StackPanel>
+            <CheckBox IsChecked="{Binding RememberPassword}" IsVisible="{Binding UseOtherAccount}" Content="Remember password on this PC"
+                      VerticalAlignment="Bottom" Margin="0,0,0,4" />
           </WrapPanel>
           <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
-                     Text="You need to be an administrator on the other computer, and its firewall must allow remote task management. Only names you connect to are remembered, with the account; never a password." />
+                     Text="You need to be an administrator on the other computer, and its firewall must allow remote task management. Computers you connect to are remembered with the account. A password is kept only if you tick Remember: Windows Credential Manager holds it, encrypted with your Windows sign-in, on this PC only." />
           <Border Classes="banner error" IsVisible="{Binding HasProblem}">
             <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
           </Border>

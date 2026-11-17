@@ -25,6 +25,7 @@ public partial class App : Application
             IComputerStore computers = demo
                 ? new MemoryComputerStore([new SavedComputer("FILESRV01"), new SavedComputer("BUILD-02", @"CONTOSO\ops.admin")])
                 : new JsonComputerStore(Path.Combine(Program.DataFolder, "computers.json"));
+            IPasswordVault passwords = demo ? new MemoryPasswordVault() : new CredentialVault();
             Views.MainView.ColumnLayoutFile = Path.Combine(Program.DataFolder, "columns.json");
             var window = new MainWindow();
             MainViewModel? main = null;
@@ -36,7 +37,7 @@ public partial class App : Application
                 IOrganizerStore organizer = demo
                     ? new MemoryOrganizerStore(host.IsRemote ? null : DemoOrganizer.Sample())
                     : new JsonOrganizerStore(Path.Combine(Program.DataFolder, $"organize-{host.ComputerName.ToLowerInvariant()}.json"));
-                var next = new MainViewModel(host, organizer: organizer, computers: computers);
+                var next = new MainViewModel(host, organizer: organizer, computers: computers, passwords: passwords);
                 next.SwitchRequested += Show;
                 var previous = main;
                 main = next;

@@ -83,6 +83,30 @@ public sealed class JsonComputerStore(string file) : IComputerStore
     }
 }
 
+/// <summary>
+/// Passwords the person chose to remember for other computers. The Windows one keeps them in
+/// Credential Manager, encrypted with the person's Windows sign-in; Schedulry's own files never hold one.
+/// </summary>
+public interface IPasswordVault
+{
+    /// <summary>The saved password for this computer and account, or null.</summary>
+    string? Read(string computer, string account);
+    void Save(string computer, string account, string password);
+    /// <summary>Removes any saved password for the computer; nothing happens if there is none.</summary>
+    void Delete(string computer);
+}
+
+public sealed class MemoryPasswordVault : IPasswordVault
+{
+    readonly Dictionary<string, (string Account, string Password)> _saved = new(StringComparer.OrdinalIgnoreCase);
+
+    public string? Read(string computer, string account) =>
+        _saved.TryGetValue(ComputerNames.Normalise(computer) ?? "", out var entry) && Accounts.Same(entry.Account, account) ? entry.Password : null;
+
+    public void Save(string computer, string account, string password) => _saved[ComputerNames.Normalise(computer) ?? ""] = (account, password);
+    public void Delete(string computer) => _saved.Remove(ComputerNames.Normalise(computer) ?? "");
+}
+
 /// <summary>Keeps the list in order of use, without duplicates, at a sensible length.</summary>
 public static class ComputerList
 {

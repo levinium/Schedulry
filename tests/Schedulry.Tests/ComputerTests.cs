@@ -112,6 +112,89 @@ public class ComputerTests
         Assert.Equal(new SavedComputer("BUILD-02", @"CONTOSO\ops.admin"), saved);   // the account, not the password
     }
 
+    MainViewModel OpenWithVault(IPasswordVault vault, IComputerStore store, List<ISchedulerHost> switched)
+    {
+        var vm = new MainViewModel(new DemoSchedulerHost(() => _now), new MonitorTiming { StatusEveryTicks = 1, FullEveryTicks = 1000 },
+            () => _now, computers: store, passwords: vault);
+        vm.SwitchRequested += switched.Add;
+        return vm;
+    }
+
+    [Fact]
+    public void A_remembered_password_is_used_next_time_without_asking()
+    {
+        var vault = new MemoryPasswordVault();
+        var store = new MemoryComputerStore();
+        var switched = new List<ISchedulerHost>();
+        using (var first = OpenWithVault(vault, store, switched))
+        {
+            var computers = first.Computers;
+            computers.Name = "BUILD-02";
+            computers.UseOtherAccount = true;
+            computers.Account = @"CONTOSO\ops.admin";
+            computers.Password = "not-a-real-password";
+            computers.RememberPassword = true;
+            computers.ConnectCommand.Execute(null);
+            Assert.False(computers.RememberPassword);   // the form is reset
+        }
+        Assert.Equal("not-a-real-password", vault.Read("build-02", @"CONTOSO\ops.admin"));
+        Assert.Null(vault.Read("BUILD-02", @"CONTOSO\someone.else"));   // only for the account it was saved with
+
+        using var next = OpenWithVault(vault, store, switched);
+        var row = next.Computers.Rows.Single(r => r.Title == "BUILD-02");
+        Assert.True(row.HasSavedPassword);
+        Assert.Equal(@"As CONTOSO\ops.admin", row.Detail);
+        next.Computers.ConnectToCommand.Execute(row);
+        Assert.Equal(2, switched.Count);   // straight through, no password asked for
+        Assert.Equal("not-a-real-password", _requests[^1].Password);
+        foreach (var host in switched)
+            host.Dispose();
+    }
+
+    [Fact]
+    public void Without_Remember_no_password_is_kept_and_an_old_one_is_dropped()
+    {
+        var vault = new MemoryPasswordVault();
+        vault.Save("BUILD-02", @"CONTOSO\ops.admin", "old-password");
+        var switched = new List<ISchedulerHost>();
+        using var vm = OpenWithVault(vault, new MemoryComputerStore(), switched);
+        var computers = vm.Computers;
+        computers.Name = "BUILD-02";
+        computers.UseOtherAccount = true;
+        computers.Account = @"CONTOSO\ops.admin";
+        computers.Password = "new-password";
+        computers.ConnectCommand.Execute(null);
+        Assert.Null(vault.Read("BUILD-02", @"CONTOSO\ops.admin"));
+        switched.Single().Dispose();
+    }
+
+    [Fact]
+    public void A_saved_password_that_fails_asks_for_the_current_one()
+    {
+        var vault = new MemoryPasswordVault();
+        vault.Save("offline-pc", @"CONTOSO\ops.admin", "old-password");
+        var switched = new List<ISchedulerHost>();
+        using var vm = OpenWithVault(vault, new MemoryComputerStore([new SavedComputer("offline-pc", @"CONTOSO\ops.admin")]), switched);
+        var computers = vm.Computers;
+        computers.ConnectToCommand.Execute(computers.Rows[1]);
+        Assert.Empty(switched);
+        Assert.EndsWith("The saved password was used; type the current one.", computers.Problem);
+        Assert.Equal("offline-pc", computers.Name);
+        Assert.True(computers.UseOtherAccount);
+        Assert.True(computers.RememberPassword);   // ready to save the new one
+        Assert.Equal("", computers.Password);
+    }
+
+    [Fact]
+    public void Forgetting_a_computer_deletes_its_saved_password()
+    {
+        var vault = new MemoryPasswordVault();
+        vault.Save("BUILD-02", @"CONTOSO\ops.admin", "pw");
+        using var vm = OpenWithVault(vault, new MemoryComputerStore([new SavedComputer("BUILD-02", @"CONTOSO\ops.admin")]), []);
+        vm.Computers.ForgetCommand.Execute(vm.Computers.Rows[1]);
+        Assert.Null(vault.Read("BUILD-02", @"CONTOSO\ops.admin"));
+    }
+
     [Fact]
     public void A_computer_that_does_not_answer_explains_why_and_stays_put()
     {

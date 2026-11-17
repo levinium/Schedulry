@@ -63,7 +63,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     readonly OrganizerData _organizer;
 
     public MainViewModel(ISchedulerHost host, MonitorTiming? timing = null, Func<DateTime>? clock = null, IOrganizerStore? organizer = null,
-        IComputerStore? computers = null)
+        IComputerStore? computers = null, IPasswordVault? passwords = null)
     {
         Host = host;
         _clock = clock ?? (() => DateTime.Now);
@@ -74,7 +74,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         IsElevated = host.IsElevated;
         CurrentUser = host.CurrentUser;
         ComputerName = host.ComputerName;
-        Computers = new ComputersViewModel(this, computers ?? new MemoryComputerStore());
+        Computers = new ComputersViewModel(this, computers ?? new MemoryComputerStore(), passwords ?? new MemoryPasswordVault());
 
         Views =
         [

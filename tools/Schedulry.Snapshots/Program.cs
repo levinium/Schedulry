@@ -84,6 +84,7 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         vm.Computers.Name = "BUILD-02";
         vm.Computers.UseOtherAccount = true;
         vm.Computers.Account = @"CONTOSO\ops.admin";
+        vm.Computers.RememberPassword = true;
     });
 
     // Looking at another computer.
@@ -104,8 +105,11 @@ return 0;
 void Render(string name, DemoSchedulerHost host, Action<MainViewModel> arrange, int width = 1440, int height = 900)
 {
     var computers = new Schedulry.Core.MemoryComputerStore(
-        [new Schedulry.Core.SavedComputer("FILESRV01"), new Schedulry.Core.SavedComputer("BUILD-02", @"CONTOSO\ops.admin")]);
-    using var vm = new MainViewModel(host, clock: () => moment, computers: computers,
+        [new Schedulry.Core.SavedComputer("FILESRV01"), new Schedulry.Core.SavedComputer("SQL-01", @"CONTOSO\sql.admin"),
+         new Schedulry.Core.SavedComputer("BUILD-02", @"CONTOSO\ops.admin")]);
+    var passwords = new Schedulry.Core.MemoryPasswordVault();
+    passwords.Save("SQL-01", @"CONTOSO\sql.admin", "demo");
+    using var vm = new MainViewModel(host, clock: () => moment, computers: computers, passwords: passwords,
         organizer: new Schedulry.Core.MemoryOrganizerStore(host.IsRemote ? null : DemoOrganizer.Sample()));
     vm.Monitor.Step();   // the first full read, raised inline
     arrange(vm);
