@@ -275,23 +275,47 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
     partial void OnLiveProblemChanged(string? value) => OnPropertyChanged(nameof(HasLiveProblem));
     partial void OnBannerProblemChanged(string? value) => OnPropertyChanged(nameof(HasBannerProblem));
-    partial void OnSelectedViewChanged(ViewItem value)
+    // The sidebar is one choice: a status, Starred or a group, or a folder. Choosing one clears the
+    // others, so only one item is ever highlighted and only one filter applies.
+
+    /// <summary>
+    /// The status highlighted in the sidebar: none while Starred, a group or a folder is chosen
+    /// (the list then shows every status in it).
+    /// </summary>
+    public ViewItem? HighlightedView
     {
-        RebuildRows();
-        OnPropertyChanged(nameof(ScopeTitle));
+        get => SelectedCollection is null && SelectedFolder is null ? SelectedView : null;
+        set
+        {
+            // The status list writes null back when another list takes the highlight: nothing to do.
+            if (value is null)
+                return;
+            if (value != SelectedView)
+            {
+                SelectedView = value;   // clears the other lists
+                return;
+            }
+            ClearPlaces();
+            RebuildRows();
+            NotifyScope();
+        }
     }
 
-    // A folder and a My Tasks list are two kinds of place: choosing one clears the other.
+    partial void OnSelectedViewChanged(ViewItem value)
+    {
+        if (_quietNav)
+            return;   // the list or folder being chosen rebuilds once
+        ClearPlaces();
+        RebuildRows();
+        NotifyScope();
+    }
+
     partial void OnSelectedFolderChanged(FolderItem? value)
     {
-        if (_quietFolder)
+        if (_quietNav)
             return;
-        if (value is not null && SelectedCollection is not null)
-        {
-            _quietCollection = true;
-            SelectedCollection = null;
-            _quietCollection = false;
-        }
+        if (value is not null)
+            ClearOthers(keepFolder: true);
         RebuildRows();
         NotifyScope();
     }
@@ -300,22 +324,43 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         IsRenamingGroup = false;
         IsConfirmingDelete = false;
-        if (_quietCollection)
+        if (_quietNav)
             return;
-        _quietFolder = true;
-        SelectedFolder = value is null ? Folders.FirstOrDefault() : null;
-        _quietFolder = false;
+        if (value is not null)
+            ClearOthers(keepFolder: false);
         RebuildRows();
         NotifyScope();
+    }
+
+    /// <summary>Back to every status, and drops Starred, a group or a folder, without rebuilding.</summary>
+    void ClearPlaces()
+    {
+        _quietNav = true;
+        SelectedCollection = null;
+        SelectedFolder = null;
+        _quietNav = false;
+    }
+
+    /// <summary>A list or a folder was chosen: every status, and the other kind of place cleared.</summary>
+    void ClearOthers(bool keepFolder)
+    {
+        _quietNav = true;
+        SelectedView = Views[0];
+        if (keepFolder)
+            SelectedCollection = null;
+        else
+            SelectedFolder = null;
+        _quietNav = false;
     }
 
     partial void OnIsRenamingGroupChanged(bool value) => OnPropertyChanged(nameof(ShowGroupTools));
     partial void OnIsConfirmingDeleteChanged(bool value) => OnPropertyChanged(nameof(ShowGroupTools));
 
-    bool _quietCollection;
+    bool _quietNav;
 
     void NotifyScope()
     {
+        OnPropertyChanged(nameof(HighlightedView));
         OnPropertyChanged(nameof(ScopeTitle));
         OnPropertyChanged(nameof(ShowGroupTools));
         OnPropertyChanged(nameof(DeleteQuestion));
@@ -483,12 +528,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (!Rows.Contains(row))
         {
             // Somewhere the list isn't showing: show everything so it can be selected.
-            SelectedView = Views[0];
             SearchText = "";
-            if (SelectedCollection is not null)
-                SelectedCollection = null;
-            else
-                SelectedFolder = Folders.FirstOrDefault();
+            HighlightedView = Views[0];
             if (row.Task.IsWindowsTask)
                 ShowWindowsTasks = true;
         }
@@ -796,19 +837,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var selected = SelectedCollection;
         var items = new List<CollectionItem> { new(null) };
         items.AddRange(_organizer.Groups.OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase).Select(g => new CollectionItem(g)));
-        _quietCollection = true;
+        _quietNav = true;
         Collections.Clear();
         foreach (var item in items)
             Collections.Add(item);
         SelectedCollection = selected is null ? null
             : Collections.FirstOrDefault(c => c.Group == selected.Group);
-        _quietCollection = false;
+        _quietNav = false;
         // The list on show went away (a deleted group): back to all tasks.
         if (selected is not null && SelectedCollection is null)
         {
-            _quietFolder = true;
-            SelectedFolder = Folders.FirstOrDefault();
-            _quietFolder = false;
             RebuildRows();
             NotifyScope();
         }
@@ -983,7 +1021,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     void RebuildFolders()
     {
-        var selectedPath = SelectedFolder?.Path ?? "\\";
+        var selectedPath = SelectedFolder?.Path;
         var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase) { ["\\"] = 0 };
         foreach (var task in _rows.Values.Select(r => r.Task).Where(InScope))
         {
@@ -1001,23 +1039,24 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Folders.Clear();
         foreach (var path in ordered)
             Folders.Add(new FolderItem(path, path == "\\" ? 0 : path.Count(c => c == '\\') - 1) { Count = counts[path] });
-        // While Starred or a group is showing, no folder is selected.
-        if (SelectedCollection is not null)
+        // No folder chosen (a status or a list is): none to restore.
+        _quietNav = true;
+        if (selectedPath is null)
         {
-            _quietFolder = true;
             SelectedFolder = null;
-            _quietFolder = false;
+            _quietNav = false;
             return;
         }
         // The same folder (by path) is re-selected quietly: the filter hasn't changed, so the list stays.
-        var restored = Folders.FirstOrDefault(f => string.Equals(f.Path, selectedPath, StringComparison.OrdinalIgnoreCase)) ?? Folders[0];
-        var samePath = string.Equals(restored.Path, selectedPath, StringComparison.OrdinalIgnoreCase);
-        _quietFolder = samePath;
-        SelectedFolder = restored;
-        _quietFolder = false;
+        // A folder that went away falls back to all tasks.
+        SelectedFolder = Folders.FirstOrDefault(f => string.Equals(f.Path, selectedPath, StringComparison.OrdinalIgnoreCase));
+        _quietNav = false;
+        if (SelectedFolder is null)
+        {
+            RebuildRows();
+            NotifyScope();
+        }
     }
-
-    bool _quietFolder;
 
     void RebuildCounts()
     {

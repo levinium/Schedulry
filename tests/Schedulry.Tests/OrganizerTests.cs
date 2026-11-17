@@ -37,6 +37,48 @@ public class OrganizerTests
     }
 
     [Fact]
+    public void The_sidebar_highlights_one_item_and_applies_one_filter()
+    {
+        using var vm = Open(new MemoryOrganizerStore(DemoOrganizer.Sample()));
+        var all = vm.Rows.Count;
+        Assert.Same(vm.Views[0], vm.HighlightedView);
+        Assert.Null(vm.SelectedFolder);
+
+        // A status, then a group: the status goes, and the group shows every status.
+        var off = vm.Views.Single(v => v.Key == "off");
+        vm.HighlightedView = off;
+        Assert.Same(off, vm.SelectedView);
+        var group = vm.Collections.First(c => c.IsGroup);
+        vm.SelectedCollection = group;
+        Assert.Null(vm.HighlightedView);
+        Assert.Equal("all", vm.SelectedView.Key);
+        Assert.Equal(group.Count, vm.Rows.Count);
+        Assert.Equal(group.Title, vm.ScopeTitle);
+
+        // A status again: the group goes.
+        vm.HighlightedView = off;
+        Assert.Null(vm.SelectedCollection);
+        Assert.Same(off, vm.HighlightedView);
+        Assert.All(vm.Rows, r => Assert.False(r.Task.Enabled));
+
+        // A folder: the status goes; then the list again by "All".
+        var folder = vm.Folders.First(f => f.Path != "\\");
+        vm.SelectedFolder = folder;
+        Assert.Null(vm.HighlightedView);
+        Assert.Null(vm.SelectedCollection);
+        Assert.Equal("all", vm.SelectedView.Key);
+        vm.HighlightedView = vm.Views[0];
+        Assert.Null(vm.SelectedFolder);
+        Assert.Equal(all, vm.Rows.Count);
+        Assert.Equal("All tasks", vm.ScopeTitle);
+
+        // The list writing null back when another list takes the highlight changes nothing.
+        vm.SelectedCollection = group;
+        vm.HighlightedView = null;
+        Assert.Same(group, vm.SelectedCollection);
+    }
+
+    [Fact]
     public void Add_to_group_by_name_makes_the_group_once()
     {
         using var vm = Open(new MemoryOrganizerStore());

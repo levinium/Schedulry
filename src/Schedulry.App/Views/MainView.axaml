@@ -284,7 +284,7 @@
             <!-- Windows' own tasks change every list and count, so the switch sits above them. -->
             <ToggleSwitch IsChecked="{Binding ShowWindowsTasks}" OnContent="Windows tasks" OffContent="Windows tasks" Margin="14,8,12,0" />
             <TextBlock Classes="section" Text="STATUS" />
-            <ListBox Classes="nav" ItemsSource="{Binding Views}" SelectedItem="{Binding SelectedView}">
+            <ListBox Classes="nav" ItemsSource="{Binding Views}" SelectedItem="{Binding HighlightedView}">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:ViewItem">
                   <Grid ColumnDefinitions="*,Auto" Margin="10,0">
