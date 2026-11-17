@@ -161,8 +161,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject
     public bool HasSaveProblem => SaveProblem is not null;
     public string SaveText => IsNew ? "Create Task" : "Save Changes";
     /// <summary>Whether the person can save here: their own task, or the app runs as administrator.</summary>
-    public bool CanChange => _shell.IsElevated || string.Equals(RunAs.Trim(), _shell.CurrentUser, StringComparison.OrdinalIgnoreCase)
-                             && (_original is null || string.Equals(_original.RunAs, _shell.CurrentUser, StringComparison.OrdinalIgnoreCase));
+    public bool CanChange => _shell.IsElevated || Accounts.Same(RunAs, _shell.CurrentUser)
+                             && (_original is null || Accounts.Same(_original.RunAs, _shell.CurrentUser));
     public string? RightsNote => CanChange ? null
         : "Saving a task that runs as another account needs administrator rights. Use Restart as Administrator first; this edit will be lost.";
 

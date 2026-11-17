@@ -229,7 +229,7 @@ public sealed class DemoSchedulerHost : ISchedulerHost
                 old = Get(original);
                 CheckCanChange(old.Task);
             }
-            else if (!IsElevated && !string.Equals(draft.RunAs, CurrentUser, StringComparison.OrdinalIgnoreCase))
+            else if (!IsElevated && !Accounts.Same(draft.RunAs, CurrentUser))
                 throw new UnauthorizedAccessException("Access is denied.");
             if ((old is null || draft.IsMoved) && _entries.ContainsKey(draft.Path))
                 throw new InvalidOperationException($"There's already a task called \"{draft.Name}\" in {DraftChanges.FolderText(draft.Folder)}.");
@@ -302,7 +302,7 @@ public sealed class DemoSchedulerHost : ISchedulerHost
 
     void CheckCanChange(TaskSnapshot task)
     {
-        if (!IsElevated && !string.Equals(task.RunAs, CurrentUser, StringComparison.OrdinalIgnoreCase))
+        if (!IsElevated && !Accounts.Same(task.RunAs, CurrentUser))
             throw new UnauthorizedAccessException("Access is denied.");
     }
 

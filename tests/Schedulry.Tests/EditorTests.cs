@@ -195,6 +195,33 @@ public class EditorTests
         Assert.Contains("-Xml $xml", PowerShellScript.For(monthly, "<Task />"));
     }
 
+    [Theory]
+    [InlineData(@"AzureAD\avery.lee", "avery.lee", true)]        // Windows stores the bare name
+    [InlineData(@"CONTOSO\Avery.Lee", @"contoso\avery.lee", true)]
+    [InlineData("avery.lee@contoso.com", @"CONTOSO.COM\avery.lee", false)]   // two domains: not assumed equal
+    [InlineData("avery.lee@contoso.com", "avery.lee", true)]
+    [InlineData(@"CONTOSO\avery.lee", @"FABRIKAM\avery.lee", false)]
+    [InlineData(@"CONTOSO\avery.lee", "avery", false)]
+    [InlineData("", "", false)]
+    public void Account_names_match_with_or_without_a_domain(string a, string b, bool same) =>
+        Assert.Equal(same, Accounts.Same(a, b));
+
+    [Fact]
+    public void Your_own_task_stored_without_a_domain_can_be_changed_without_admin()
+    {
+        using var vm = Open(elevated: false);
+        vm.NewTaskCommand.Execute(null);
+        var editor = vm.Editor!;
+        editor.Name = "Mine";
+        editor.Actions[0].Program = "cmd.exe";
+        editor.RunAs = "avery.lee";   // as Windows reads it back
+        Assert.Null(editor.RightsNote);
+        editor.SaveCommand.Execute(null);
+        vm.Monitor.Step();
+        Assert.True(vm.Detail!.EditCommand.CanExecute(null));
+        Assert.True(vm.Detail.RunCommand.CanExecute(null));
+    }
+
     [Fact]
     public void Folder_names_are_normalised()
     {

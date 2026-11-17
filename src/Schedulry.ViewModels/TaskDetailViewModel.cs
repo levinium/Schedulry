@@ -196,7 +196,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject, IDisposable
     partial void OnNextRunsLoadingChanged(bool value) => OnPropertyChanged(nameof(NoNextRuns));
 
     /// <summary>Changing a task needs admin rights, unless it runs as the person using this app.</summary>
-    bool CanChange => _shell.IsElevated || string.Equals(Task.RunAs, _shell.CurrentUser, StringComparison.OrdinalIgnoreCase);
+    bool CanChange => _shell.IsElevated || Accounts.Same(Task.RunAs, _shell.CurrentUser);
 
     bool CanRun() => !Busy && CanChange && Task.Enabled && Task.State != RunState.Running && Task.Settings.AllowRunOnDemand;
     bool CanEnd() => !Busy && CanChange && Task.State == RunState.Running;
