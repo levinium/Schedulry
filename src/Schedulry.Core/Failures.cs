@@ -71,13 +71,20 @@ public sealed class AppSettings
     public bool KeepRunningWhenClosed { get; set; } = true;
     /// <summary>The "still running in the notification area" note has been shown once.</summary>
     public bool TrayNoteShown { get; set; }
+    /// <summary>Opening Schedulry restarts it as administrator (one approval prompt).</summary>
+    public bool AlwaysRunAsAdmin { get; set; }
 }
 
-/// <summary>Starting with Windows: the Windows one is an entry in the person's Run key.</summary>
+/// <summary>
+/// Starting with Windows: on Windows an entry in the person's Run key, or, to start as
+/// administrator without a prompt, a sign-in task with highest privileges.
+/// </summary>
 public interface IStartup
 {
     bool IsOn { get; }
-    void Set(bool on);
+
+    /// <summary>Turns it on or off; <paramref name="asAdmin"/> picks how it starts.</summary>
+    Task SetAsync(bool on, bool asAdmin);
 }
 
 /// <summary>

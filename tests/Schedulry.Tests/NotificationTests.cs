@@ -147,7 +147,45 @@ public class NotificationTests
     sealed class LockedStartup : IStartup
     {
         public bool IsOn => false;
-        public void Set(bool on) => throw new UnauthorizedAccessException("Access is denied.");
+        public System.Threading.Tasks.Task SetAsync(bool on, bool asAdmin) => throw new UnauthorizedAccessException("Access is denied.");
+    }
+
+    /// <summary>Records how starting with Windows was last set.</summary>
+    sealed class RecordingStartup : IStartup
+    {
+        public bool IsOn { get; private set; }
+        public bool AsAdmin { get; private set; }
+        public int Calls { get; private set; }
+
+        public System.Threading.Tasks.Task SetAsync(bool on, bool asAdmin)
+        {
+            Calls++;
+            IsOn = on;
+            AsAdmin = on && asAdmin;
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Always_run_as_administrator_is_saved_and_moves_starting_with_windows()
+    {
+        var store = new MemorySettingsStore();
+        var startup = new RecordingStartup();
+        var settings = new SettingsViewModel(store, startup);
+        settings.AlwaysRunAsAdmin = true;
+        await settings.PendingChange;
+        Assert.True(store.Load().AlwaysRunAsAdmin);
+        Assert.Equal(0, startup.Calls);   // not starting with Windows: nothing to move
+
+        settings.StartWithWindows = true;
+        await settings.PendingChange;
+        Assert.True(startup.AsAdmin);     // the sign-in task, not the Run key
+
+        settings.AlwaysRunAsAdmin = false;
+        await settings.PendingChange;
+        Assert.True(startup.IsOn);
+        Assert.False(startup.AsAdmin);    // back to the Run key
+        Assert.True(new SettingsViewModel(store, startup).StartWithWindows);
     }
 
     [Fact]
@@ -242,7 +280,7 @@ public class NotificationTests
         var remote = new FakeRemoteAccess();
         var settings = new SettingsViewModel(new MemorySettingsStore(), remote: remote);
         settings.AllowLocalAdmins = true;
-        await settings.RemoteChange;
+        await settings.PendingChange;
         Assert.True(remote.LocalAdminsOn);
         Assert.False(remote.IsOn);   // the firewall is left alone
         Assert.True(settings.AllowLocalAdmins);
@@ -255,7 +293,7 @@ public class NotificationTests
         var remote = new FakeRemoteAccess { Answer = false };
         var settings = new SettingsViewModel(new MemorySettingsStore(), remote: remote);
         settings.AllowLocalAdmins = true;
-        await settings.RemoteChange;
+        await settings.PendingChange;
         Assert.False(settings.AllowLocalAdmins);
         Assert.Null(settings.Problem);
     }
@@ -267,11 +305,11 @@ public class NotificationTests
         var settings = new SettingsViewModel(new MemorySettingsStore(), remote: remote);
         Assert.False(settings.AllowRemote);
         settings.AllowRemote = true;
-        await settings.RemoteChange;
+        await settings.PendingChange;
         Assert.True(remote.IsOn);
         Assert.True(settings.AllowRemote);
         Assert.Null(settings.Problem);
-        Assert.True(settings.CanChangeRemote);
+        Assert.True(settings.CanChange);
     }
 
     [Fact]
@@ -280,7 +318,7 @@ public class NotificationTests
         var remote = new FakeRemoteAccess { Answer = false };
         var settings = new SettingsViewModel(new MemorySettingsStore(), remote: remote);
         settings.AllowRemote = true;
-        await settings.RemoteChange;
+        await settings.PendingChange;
         Assert.False(settings.AllowRemote);
         Assert.Null(settings.Problem);
     }
@@ -291,7 +329,7 @@ public class NotificationTests
         var remote = new FakeRemoteAccess { Fail = new InvalidOperationException("Windows Firewall didn't take the change (code 5).") };
         var settings = new SettingsViewModel(new MemorySettingsStore(), remote: remote);
         settings.AllowRemote = true;
-        await settings.RemoteChange;
+        await settings.PendingChange;
         Assert.False(settings.AllowRemote);
         Assert.Equal("Couldn't change whether other computers can manage this one: Windows Firewall didn't take the change (code 5).", settings.Problem);
     }

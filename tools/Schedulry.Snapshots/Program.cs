@@ -6,6 +6,7 @@ using Avalonia;
 using Avalonia.Headless;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Schedulry.App;
 using Schedulry.Demo;
 using Schedulry.ViewModels;
@@ -87,6 +88,20 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         vm.Computers.RememberPassword = true;
     });
 
+    // Several tasks selected, in a group.
+    Render($"multi-select-{suffix}", new DemoSchedulerHost(() => moment), vm =>
+    {
+        var rows = vm.Rows.Where(r => r.Name is "Clear temp folders" or "Defragment data drive" or "Mirror data to NAS").ToList();
+        vm.AddToGroup(rows, "Overnight jobs");
+        vm.SelectedCollection = vm.Collections.Single(c => c.Title == "Overnight jobs");
+    }, shown: window =>
+    {
+        // The table holds the selection; picking rows there tells the model, as Shift and Ctrl do.
+        var grid = window.GetVisualDescendants().OfType<Avalonia.Controls.DataGrid>().First(g => g.Name == "TaskGrid");
+        foreach (var row in grid.ItemsSource!.Cast<TaskRowViewModel>().Where(r => r.Name is "Clear temp folders" or "Defragment data drive" or "Mirror data to NAS"))
+            grid.SelectedItems.Add(row);
+    });
+
     // Settings: alerts, the notification area, starting with Windows.
     Render($"settings-{suffix}", new DemoSchedulerHost(() => moment), vm =>
     {
@@ -113,7 +128,7 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
 Console.WriteLine($"Wrote snapshots to {output}");
 return 0;
 
-void Render(string name, DemoSchedulerHost host, Action<MainViewModel> arrange, int width = 1440, int height = 900)
+void Render(string name, DemoSchedulerHost host, Action<MainViewModel> arrange, int width = 1440, int height = 900, Action<MainWindow>? shown = null)
 {
     var computers = new Schedulry.Core.MemoryComputerStore(
         [new Schedulry.Core.SavedComputer("FILESRV01"), new Schedulry.Core.SavedComputer("SQL-01", @"CONTOSO\sql.admin"),
@@ -127,6 +142,11 @@ void Render(string name, DemoSchedulerHost host, Action<MainViewModel> arrange, 
     var window = new MainWindow { Width = width, Height = height, DataContext = vm };
     window.Show();
     Settle();
+    if (shown is not null)
+    {
+        shown(window);
+        Settle();
+    }
     using var frame = window.CaptureRenderedFrame() ?? throw new InvalidOperationException($"No frame rendered for {name}");
 #pragma warning disable CS0618 // the encoder-options overload adds nothing for a plain PNG
     frame.Save(Path.Combine(output, name + ".png"));

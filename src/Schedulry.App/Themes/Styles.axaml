@@ -233,6 +233,12 @@
   <Style Selector="ListBox.nav ListBoxItem:selected TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource NavSelectedFg}" />
   </Style>
+  <!-- A group (or Starred) that dragged tasks would drop into. -->
+  <Style Selector="ListBox.nav ListBoxItem.droptarget /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NavSelectedBg}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
 
   <!-- The task table. A size smaller than the rest of the app, so names fit. Each cell's Border
        fills the cell, so a row that just changed glows from edge to edge. -->

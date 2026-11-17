@@ -113,4 +113,88 @@ public class OrganizerTests
                 Directory.Delete(folder, recursive: true);
         }
     }
+
+    // ---- Several tasks at once ----
+
+    (MainViewModel Vm, List<TaskRowViewModel> Rows) OpenWithTwoSelected(IOrganizerStore? store = null)
+    {
+        var vm = Open(store ?? new MemoryOrganizerStore());
+        var rows = vm.Rows.Where(r => r.Name is "Clear temp folders" or "Rotate web logs").ToList();
+        vm.SelectedRow = rows[0];
+        vm.SetSelection(rows);
+        return (vm, rows);
+    }
+
+    [Fact]
+    public void Several_selected_tasks_go_into_a_group_together()
+    {
+        var store = new MemoryOrganizerStore();
+        var (vm, rows) = OpenWithTwoSelected(store);
+        using var _ = vm;
+        Assert.True(vm.HasMultiple);
+        Assert.False(vm.ShowSingleDetail);
+        Assert.Equal("2 tasks selected", vm.SelectionText);
+        Assert.False(vm.AddSelectionToGroupCommand.CanExecute(null));   // no name yet
+
+        vm.SelectionGroupText = "Cleanup";
+        vm.AddSelectionToGroupCommand.Execute(null);
+
+        var group = Assert.Single(vm.Collections, c => c.IsGroup);
+        Assert.Equal(2, group.Count);
+        Assert.Equal("", vm.SelectionGroupText);
+        Assert.All(rows, r => Assert.True(store.Load().Groups.Single().Contains(r.Path)));
+    }
+
+    [Fact]
+    public void Dropping_tasks_on_starred_stars_them()
+    {
+        var (vm, rows) = OpenWithTwoSelected();
+        using var _ = vm;
+        Assert.Equal("Star All", vm.SelectionStarText);
+        vm.AddToCollection(rows, vm.Collections.Single(c => c.IsStarredList));
+        Assert.All(rows, r => Assert.True(r.IsStarred));
+        Assert.Equal("Unstar All", vm.SelectionStarText);
+        vm.ToggleSelectionStarCommand.Execute(null);
+        Assert.All(rows, r => Assert.False(r.IsStarred));
+    }
+
+    [Fact]
+    public void New_group_for_selected_tasks_puts_them_in_when_created()
+    {
+        var (vm, rows) = OpenWithTwoSelected();
+        using var _ = vm;
+        vm.StartNewGroupFor(rows);
+        Assert.True(vm.IsCreatingGroup);
+        vm.NewGroupName = "Nightly";
+        vm.CreateGroupCommand.Execute(null);
+        var group = Assert.Single(vm.Collections, c => c.IsGroup);
+        Assert.Equal(2, group.Count);
+        Assert.Same(group, vm.SelectedCollection);
+
+        // Cancelled, a later group starts empty.
+        vm.StartNewGroupFor(rows);
+        vm.CancelNewGroupCommand.Execute(null);
+        vm.StartNewGroupCommand.Execute(null);
+        vm.NewGroupName = "Empty";
+        vm.CreateGroupCommand.Execute(null);
+        Assert.Equal(0, vm.Collections.Single(c => c.Title == "Empty").Count);
+    }
+
+    [Fact]
+    public void Selected_tasks_taken_out_of_a_group_stay_until_looked_away_from()
+    {
+        var (vm, rows) = OpenWithTwoSelected();
+        using var _ = vm;
+        vm.AddToGroup(rows, "Cleanup");
+        vm.SelectedCollection = vm.Collections.Single(c => c.IsGroup);
+        vm.SelectedRow = rows[0];
+        vm.SetSelection(rows);
+        Assert.True(vm.CanRemoveSelectionFromGroup);
+        Assert.Equal("Remove from Cleanup", vm.RemoveSelectionText);
+
+        vm.RemoveSelectionFromGroupCommand.Execute(null);
+        Assert.Equal(0, vm.SelectedCollection!.Count);
+        Assert.Equal(2, vm.Rows.Count);   // still showing while selected
+        Assert.False(vm.CanRemoveSelectionFromGroup);
+    }
 }

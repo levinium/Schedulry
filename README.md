@@ -47,7 +47,7 @@ there if you uninstall.
 | "Run whether user is logged on or not" and "Do not store password" | What that means for this task, in a sentence |
 | Windows' own 200 tasks mixed in with yours | Hidden until you switch them on |
 | Columns you can't make wider | Drag column edges and headers, and the divider beside the preview; your layout is remembered |
-| Folders are the only way to arrange tasks, and moving one changes it | Star tasks and put them in your own groups (a task can be in several); kept by Schedulry, so the tasks themselves never change |
+| Folders are the only way to arrange tasks, and moving one changes it | Star tasks and put them in your own groups (a task can be in several): select several with Shift or Ctrl, then drag them onto a group, right-click them, or use the preview. Kept by Schedulry, so the tasks themselves never change |
 | A failed task stays quiet until you happen to open the window | A Windows notification when a run fails, even with the window closed (Schedulry keeps watching from the notification area); Windows' own tasks are left out unless you want them, and Alerts in a task's preview turns them off for that task |
 | Connect to Another Computer, then type the name again next time; "The RPC server is unavailable" | Computers you've used are one click away (with the account; a password only if you tick Remember, kept in Windows Credential Manager), and a failure says what to check: the name, the firewall rule, the account |
 
@@ -73,7 +73,9 @@ dotnet run --project src/Schedulry.App
 Add `-- --demo` to open a made-up computer whose tasks start and finish on their own.
 
 Schedulry opens without a UAC prompt. You can see most tasks that way and change the ones that
-run as you; **Restart as Administrator** unlocks the rest. Windows keeps no task history by
+run as you; **Restart as Administrator** unlocks the rest, and **Settings** → **Always run as
+administrator** makes that the way it opens (with Start with Windows on, it starts that way at
+sign-in without a prompt, through a task in Task Scheduler). Windows keeps no task history by
 default; **Turn On History** switches it on (with your approval), which also makes starts and
 finishes appear the instant they happen.
 

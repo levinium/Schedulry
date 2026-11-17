@@ -16,7 +16,11 @@ public partial class MainView : UserControl
 
     Window? _window;
 
-    public MainView() => InitializeComponent();
+    public MainView()
+    {
+        InitializeComponent();
+        WireTaskSelection();
+    }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {

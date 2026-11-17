@@ -1,5 +1,3 @@
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using Schedulry.Core;
@@ -31,7 +29,6 @@ public sealed class RemoteAccess : IRemoteAccess
         "@FirewallAPI.dll,-29252",   // Remote Event Log Management
     ];
     const int AllProfiles = 0x7FFFFFFF;   // NET_FW_PROFILE2_ALL: domain, private and public
-    const int Cancelled = 1223;          // ERROR_CANCELLED: No at the UAC prompt
     const string PolicyKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System";
     const string TokenFilter = "LocalAccountTokenFilterPolicy";
 
@@ -68,33 +65,10 @@ public sealed class RemoteAccess : IRemoteAccess
     /// <summary>Directly when already elevated; otherwise an elevated copy of the app makes the change.</summary>
     static async Task<bool> SetAsync(string flag, bool on, Action apply)
     {
-        if (Elevation.IsElevated)
-        {
-            apply();
-            return true;
-        }
-        var start = new ProcessStartInfo(Environment.ProcessPath!)
-        {
-            UseShellExecute = true,
-            Verb = "runas",
-            WindowStyle = ProcessWindowStyle.Hidden,
-        };
-        start.ArgumentList.Add(flag);
-        start.ArgumentList.Add(on ? "on" : "off");
-        try
-        {
-            using var process = Process.Start(start);
-            if (process is null)
-                return false;
-            await process.WaitForExitAsync();
-            if (process.ExitCode != 0)
-                throw new InvalidOperationException($"Windows didn't take the change (code 0x{process.ExitCode:X8}).");
-            return true;
-        }
-        catch (Win32Exception e) when (e.NativeErrorCode == Cancelled)
-        {
-            return false;
-        }
+        if (!Elevation.IsElevated)
+            return await Elevation.RunElevatedAsync(flag, on ? "on" : "off");
+        apply();
+        return true;
     }
 
     /// <summary>Opens or closes the firewall rule groups. Needs administrator rights.</summary>

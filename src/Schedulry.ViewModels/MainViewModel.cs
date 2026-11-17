@@ -319,6 +319,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ScopeTitle));
         OnPropertyChanged(nameof(ShowGroupTools));
         OnPropertyChanged(nameof(DeleteQuestion));
+        SelectionChanged();
     }
     partial void OnSearchTextChanged(string value)
     {
@@ -346,6 +347,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Detail?.Dispose();
         Detail = value is null ? null : new TaskDetailViewModel(value, this);
         OnPropertyChanged(nameof(HasDetail));
+        OnPropertyChanged(nameof(ShowSingleDetail));
     }
 
     /// <summary>Starts watching. The first read happens on the monitor's thread.</summary>
@@ -539,6 +541,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Detail?.Dispose();
         Detail = new TaskDetailViewModel(row, this);
         OnPropertyChanged(nameof(HasDetail));
+        OnPropertyChanged(nameof(ShowSingleDetail));
     }
 
     bool ActivityVisible(string path)
@@ -637,7 +640,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    void CancelNewGroup() => IsCreatingGroup = false;
+    void CancelNewGroup()
+    {
+        IsCreatingGroup = false;
+        _pendingForNewGroup = null;
+    }
 
     bool CanCreateGroup() => NewGroupName.Trim().Length > 0;
 
@@ -646,6 +653,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         var item = FindOrCreateGroup(NewGroupName);
         IsCreatingGroup = false;
+        // Made from "New Group…" on selected tasks: they go in first.
+        if (_pendingForNewGroup is { } pending)
+        {
+            _pendingForNewGroup = null;
+            AddToCollection(pending, item);
+        }
         SelectedCollection = item;
     }
 
@@ -743,20 +756,26 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Detail?.RefreshGroups();
     }
 
-    void OrganizerChanged(TaskRowViewModel row)
+    void OrganizerChanged(TaskRowViewModel row) => OrganizerChanged([row]);
+
+    void OrganizerChanged(IReadOnlyList<TaskRowViewModel> rows)
     {
         Save();
         RebuildCollectionCounts();
         OnPropertyChanged(nameof(GroupNames));
-        // In Starred or a group, a task taken out leaves the list (unless it's the one being looked at).
-        var visible = Visible(row.Task);
-        var listed = Rows.Contains(row);
-        if (visible && !listed)
-            InsertSorted(row);
-        else if (!visible && listed && SelectedRow != row)
-            Rows.Remove(row);
-        if (Detail?.Row == row)
-            Detail.RefreshGroups();
+        foreach (var row in rows)
+        {
+            // In Starred or a group, a task taken out leaves the list (unless it's selected: it stays until looked away from).
+            var visible = Visible(row.Task);
+            var listed = Rows.Contains(row);
+            if (visible && !listed)
+                InsertSorted(row);
+            else if (!visible && listed && SelectedRow != row && !_selection.Contains(row))
+                Rows.Remove(row);
+            if (Detail?.Row == row)
+                Detail.RefreshGroups();
+        }
+        SelectionChanged();
         UpdateEmptyText();
     }
 

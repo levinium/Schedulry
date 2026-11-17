@@ -183,15 +183,20 @@
                          Text="Schedulry stays in the notification area and keeps watching. Exit it from its icon there." />
             </StackPanel>
             <StackPanel Width="330" Spacing="2">
-              <CheckBox IsChecked="{Binding StartWithWindows}" Content="Start with Windows" />
+              <CheckBox IsChecked="{Binding StartWithWindows}" IsEnabled="{Binding CanChange}" Content="Start with Windows" />
               <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Margin="28,0,0,0"
                          Text="Starts in the notification area when you sign in, so failures are noticed without opening it." />
             </StackPanel>
             <StackPanel Width="330" Spacing="2">
-              <CheckBox IsChecked="{Binding AllowRemote}" IsEnabled="{Binding CanChangeRemote}" Content="Let other computers manage this PC's tasks" />
+              <CheckBox IsChecked="{Binding AlwaysRunAsAdmin}" IsEnabled="{Binding CanChange}" Content="Always run as administrator" />
+              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Margin="28,0,0,0"
+                         Text="Opens with full rights, so every task can be changed. Windows asks for approval each time you open Schedulry. With Start with Windows on, it starts this way at sign-in without asking (through a task in Task Scheduler)." />
+            </StackPanel>
+            <StackPanel Width="330" Spacing="2">
+              <CheckBox IsChecked="{Binding AllowRemote}" IsEnabled="{Binding CanChange}" Content="Let other computers manage this PC's tasks" />
               <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Margin="28,0,0,0"
                          Text="Opens Windows Firewall for remote task management and run history. Asks for administrator approval. Other computers still need an administrator account on this PC." />
-              <CheckBox IsChecked="{Binding AllowLocalAdmins}" IsEnabled="{Binding CanChangeRemote}" Content="Also let this PC's own administrator accounts connect"
+              <CheckBox IsChecked="{Binding AllowLocalAdmins}" IsEnabled="{Binding CanChange}" Content="Also let this PC's own administrator accounts connect"
                         Margin="28,6,0,0" />
               <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Margin="56,0,0,0"
                          Text="Only needed when connecting as a local account such as .\Admin; domain accounts work without it. Windows normally removes a local account's administrator rights over the network, so a stolen local password reaches less. Turn on only if you need it." />
@@ -290,7 +295,8 @@
               </ListBox.ItemTemplate>
             </ListBox>
             <TextBlock Classes="section" Text="MY TASKS" />
-            <ListBox Classes="nav" ItemsSource="{Binding Collections}" SelectedItem="{Binding SelectedCollection}">
+            <!-- Tasks dragged from the table drop onto Starred or a group. -->
+            <ListBox Name="CollectionList" Classes="nav" ItemsSource="{Binding Collections}" SelectedItem="{Binding SelectedCollection}" DragDrop.AllowDrop="True">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:CollectionItem">
                   <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,0,0,0">
@@ -373,7 +379,7 @@
 
           <!-- The table: drag a column's edge to resize it (widths are remembered); sort with "Sort by". -->
           <DataGrid Grid.Row="1" Grid.RowSpan="2" Name="TaskGrid" Classes="tasks" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" IsVisible="{Binding ShowTaskList}"
-                    AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" CanUserResizeColumns="True"
+                    AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended" CanUserResizeColumns="True"
                     CanUserReorderColumns="True" CanUserSortColumns="False" GridLinesVisibility="None" HeadersVisibility="Column">
             <DataGrid.Columns>
               <DataGridTemplateColumn Header="Status" Tag="status" Width="128" MinWidth="124">
@@ -522,7 +528,32 @@
             <ic:FluentIcon Icon="CalendarClock" FontSize="32" HorizontalAlignment="Center" Foreground="{DynamicResource TextMuted}" />
             <TextBlock Classes="secondary" Text="Select a task to see when it runs, what it does and how its last run went." TextWrapping="Wrap" TextAlignment="Center" />
           </StackPanel>
-          <ContentControl Content="{Binding Detail}" IsVisible="{Binding HasDetail}">
+          <!-- Several tasks selected: what can be done to all of them. -->
+          <ScrollViewer IsVisible="{Binding HasMultiple}">
+            <StackPanel Margin="20,18,20,8" Spacing="10">
+              <TextBlock Classes="h1" Text="{Binding SelectionText}" />
+              <TextBlock Classes="secondary" TextWrapping="Wrap"
+                         Text="Add them to a group here, right-click them for more, or drag them onto a group in the sidebar. Shift-click selects a range; Ctrl-click adds or removes one." />
+              <WrapPanel ItemSpacing="8" LineSpacing="8">
+                <Button Classes="neutral" Command="{Binding ToggleSelectionStarCommand}">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <ic:FluentIcon Icon="Star" FontSize="14" />
+                    <TextBlock Text="{Binding SelectionStarText}" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="neutral" Content="{Binding RemoveSelectionText}" Command="{Binding RemoveSelectionFromGroupCommand}"
+                        IsVisible="{Binding CanRemoveSelectionFromGroup}" />
+              </WrapPanel>
+              <Separator Margin="0,6" />
+              <TextBlock Classes="h2" Text="Add to a Group" />
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <AutoCompleteBox Text="{Binding SelectionGroupText}" ItemsSource="{Binding GroupNames}" FilterMode="ContainsOrdinal"
+                                 Watermark="A group's name, new or existing" />
+                <Button Grid.Column="1" Classes="primary" Content="Add to Group" Command="{Binding AddSelectionToGroupCommand}" />
+              </Grid>
+            </StackPanel>
+          </ScrollViewer>
+          <ContentControl Content="{Binding Detail}" IsVisible="{Binding ShowSingleDetail}">
             <ContentControl.DataTemplates>
               <DataTemplate x:DataType="vm:TaskDetailViewModel">
                 <ScrollViewer>

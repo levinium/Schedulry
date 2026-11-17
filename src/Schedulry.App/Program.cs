@@ -26,8 +26,8 @@ internal static class Program
             .OnBeforeUninstallFastCallback(_ => Uninstalling())
             .Run();
 
-        // An elevated copy started only to change the firewall for remote access: it does that and exits.
-        if (Windows.RemoteAccess.RunFromArgs(args) is int code)
+        // An elevated copy started only to make one change (the firewall, the sign-in task): it does that and exits.
+        if ((Windows.RemoteAccess.RunFromArgs(args) ?? Windows.StartupRegistration.RunFromArgs(args)) is int code)
         {
             Environment.ExitCode = code;
             return;
@@ -45,7 +45,28 @@ internal static class Program
         // The demo computer runs beside the real one, so it has its own name.
         if (!SingleInstance.Claim(Demo ? "Schedulry.Demo" : "Schedulry", quiet: StartInTray, waitForPrevious: Has(RestartedFlag)))
             return;
+        // Always run as administrator: this copy hands over to an elevated one, which waits for it to close.
+        // No at the prompt opens it normally.
+        if (WantsAdmin() && Windows.Elevation.StartElevatedCopy(
+                args.Where(a => !a.Equals("-ToastActivated", StringComparison.OrdinalIgnoreCase)
+                    && !a.Equals(RestartedFlag, StringComparison.OrdinalIgnoreCase)).Append(RestartedFlag)))
+            return;
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args, Avalonia.Controls.ShutdownMode.OnExplicitShutdown);
+    }
+
+    /// <summary>The "Always run as administrator" setting is on and this copy isn't. Never for the demo.</summary>
+    static bool WantsAdmin()
+    {
+        if (Demo || Windows.Elevation.IsElevated)
+            return false;
+        try
+        {
+            return new Core.JsonSettingsStore(Path.Combine(DataFolder, "settings.json")).Load().AlwaysRunAsAdmin;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     // Named exactly this because Avalonia's XAML previewer looks it up by convention.
@@ -88,7 +109,7 @@ internal static class Program
     {
         try
         {
-            new Windows.StartupRegistration().Set(false);
+            new Windows.StartupRegistration().RemoveAll();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
