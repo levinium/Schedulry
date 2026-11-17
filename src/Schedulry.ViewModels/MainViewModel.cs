@@ -63,9 +63,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     readonly OrganizerData _organizer;
 
     public MainViewModel(ISchedulerHost host, MonitorTiming? timing = null, Func<DateTime>? clock = null, IOrganizerStore? organizer = null,
-        IComputerStore? computers = null, IPasswordVault? passwords = null)
+        IComputerStore? computers = null, IPasswordVault? passwords = null, SettingsViewModel? settings = null)
     {
         Host = host;
+        Settings = settings ?? new SettingsViewModel(new MemorySettingsStore());
         _clock = clock ?? (() => DateTime.Now);
         _store = organizer ?? new MemoryOrganizerStore();
         _organizer = _store.Load();
@@ -100,7 +101,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Monitor.Changed += changes => Platform.Post(() => OnChanged(changes));
         Monitor.Ticked += _ => Platform.Post(OnTicked);
         Monitor.Failed += e => Platform.Post(() => LiveProblem = $"Couldn't read Task Scheduler: {e.Message}");
+        Settings.PropertyChanged += OnSettingsChanged;
     }
+
+    void OnSettingsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => Detail?.RefreshMuted();
 
     public ISchedulerHost Host { get; }
     public LiveMonitor Monitor { get; }
@@ -122,7 +126,64 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public event Action<ISchedulerHost>? SwitchRequested;
 
     [RelayCommand]
-    void ToggleComputers() => ShowComputers = !ShowComputers;
+    void ToggleComputers()
+    {
+        ShowComputers = !ShowComputers;
+        if (ShowComputers)
+            ShowSettings = false;
+    }
+
+    // ---- Settings and notifications ----
+
+    public SettingsViewModel Settings { get; }
+    [ObservableProperty] public partial bool ShowSettings { get; set; }
+    readonly FailureWatch _failures = new();
+
+    [RelayCommand]
+    void ToggleSettings()
+    {
+        ShowSettings = !ShowSettings;
+        if (ShowSettings)
+            ShowComputers = false;
+    }
+
+    /// <summary>The window is hidden in the notification area: the monitor looks less often.</summary>
+    public bool InBackground
+    {
+        get => Monitor.InBackground;
+        set => Monitor.InBackground = value;
+    }
+
+    public bool IsMuted(string path) => _organizer.IsMuted(path);
+
+    /// <summary>Stops (or restarts) notifications for one task's failures.</summary>
+    public void SetMuted(string path, bool muted)
+    {
+        _organizer.SetMuted(path, muted);
+        Save();
+        if (Detail is { } detail && string.Equals(detail.Row.Path, path, StringComparison.OrdinalIgnoreCase))
+            detail.RefreshMuted();
+    }
+
+    /// <summary>Selects a task (from a notification), once the list has it.</summary>
+    public void ShowTask(string path)
+    {
+        if (Editor is not null || Import is not null)
+            return;   // a half-made change stays on screen
+        _selectWhenSeen = path;
+        SelectIfSeen();
+    }
+
+    /// <summary>A run has just failed and the person wants to hear about it. Raised on the UI thread.</summary>
+    public event Action<FailureNotice>? RunFailed;
+
+    void NotifyFailures(IReadOnlyList<TaskChange> changes)
+    {
+        if (RunFailed is not { } handler)
+            return;
+        foreach (var task in _failures.Check(changes, t => Settings.Wants(t) && !_organizer.IsMuted(t.Path)))
+            handler(new FailureNotice(ComputerName, Host.IsRemote, task));
+    }
 
     internal void SwitchTo(ISchedulerHost host)
     {
@@ -740,6 +801,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     void OnLoaded(IReadOnlyList<TaskSnapshot> tasks)
     {
+        _failures.Seed(tasks);
         var now = _clock();
         _rows.Clear();
         foreach (var task in tasks)
@@ -753,6 +815,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     void OnChanged(IReadOnlyList<TaskChange> changes)
     {
+        NotifyFailures(changes);
         var now = _clock();
         var foldersChanged = false;
         foreach (var change in changes)
@@ -793,8 +856,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (foldersChanged)
             RebuildFolders();
         RebuildCounts();
-        UpdateEmptyText();        SelectIfSeen();
-
+        UpdateEmptyText();
+        SelectIfSeen();
     }
 
     /// <summary>Keeps "Running 0:42" and "In 3 min" moving between monitor ticks. The app calls it every second.</summary>
@@ -966,6 +1029,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        Settings.PropertyChanged -= OnSettingsChanged;
         Detail?.Dispose();
         Monitor.Dispose();
         Host.Dispose();

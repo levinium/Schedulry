@@ -23,6 +23,8 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="FluentIcons.Avalonia" />
     <PackageReference Include="Avalonia.Controls.DataGrid" />
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" />
+    <PackageReference Include="System.Drawing.Common" />
   </ItemGroup>
 
   <ItemGroup>

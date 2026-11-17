@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace Schedulry.Core;
 
 /// <summary>
@@ -11,8 +9,18 @@ public sealed class OrganizerData
 {
     public List<string> Starred { get; set; } = [];
     public List<TaskGroup> Groups { get; set; } = [];
+    /// <summary>Tasks whose failures don't send a notification.</summary>
+    public List<string> Muted { get; set; } = [];
 
     public bool IsStarred(string path) => Starred.Contains(path, StringComparer.OrdinalIgnoreCase);
+    public bool IsMuted(string path) => Muted.Contains(path, StringComparer.OrdinalIgnoreCase);
+
+    public void SetMuted(string path, bool muted)
+    {
+        Muted.RemoveAll(p => string.Equals(p, path, StringComparison.OrdinalIgnoreCase));
+        if (muted)
+            Muted.Add(path);
+    }
 
     public void SetStarred(string path, bool starred)
     {
@@ -57,27 +65,6 @@ public sealed class MemoryOrganizerStore(OrganizerData? data = null) : IOrganize
 /// <summary>A JSON file per computer in the app-data folder, replaced whole on each save.</summary>
 public sealed class JsonOrganizerStore(string file) : IOrganizerStore
 {
-    static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
-
-    public OrganizerData Load()
-    {
-        try
-        {
-            return File.Exists(file) ? JsonSerializer.Deserialize<OrganizerData>(File.ReadAllText(file)) ?? new() : new();
-        }
-        catch (JsonException)
-        {
-            // A damaged file shouldn't stop the app; it is kept beside the fresh one for recovery.
-            File.Copy(file, file + ".damaged", overwrite: true);
-            return new OrganizerData();
-        }
-    }
-
-    public void Save(OrganizerData data)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
-        var temp = file + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(data, Options));
-        File.Move(temp, file, overwrite: true);
-    }
+    public OrganizerData Load() => JsonFile.Load<OrganizerData>(file) ?? new OrganizerData();
+    public void Save(OrganizerData data) => JsonFile.Save(file, data);
 }

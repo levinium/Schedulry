@@ -87,6 +87,13 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         vm.Computers.RememberPassword = true;
     });
 
+    // Settings: alerts, the notification area, starting with Windows.
+    Render($"settings-{suffix}", new DemoSchedulerHost(() => moment), vm =>
+    {
+        vm.SelectedRow = vm.Rows.First(r => r.Name == "Sync payroll exports");
+        vm.ShowSettings = true;
+    });
+
     // Looking at another computer.
     Render($"remote-{suffix}", new DemoSchedulerHost(() => moment, historyEnabled: true, computer: "FILESRV01"), vm =>
         vm.SelectedRow = vm.Rows.First(r => r.Name == "Mirror data to NAS"));

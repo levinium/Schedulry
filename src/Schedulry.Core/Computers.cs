@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace Schedulry.Core;
 
 /// <summary>
@@ -59,28 +57,8 @@ public sealed class MemoryComputerStore(IEnumerable<SavedComputer>? computers = 
 
 public sealed class JsonComputerStore(string file) : IComputerStore
 {
-    static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
-
-    public List<SavedComputer> Load()
-    {
-        try
-        {
-            return File.Exists(file) ? JsonSerializer.Deserialize<List<SavedComputer>>(File.ReadAllText(file)) ?? [] : [];
-        }
-        catch (JsonException)
-        {
-            File.Copy(file, file + ".damaged", overwrite: true);
-            return [];
-        }
-    }
-
-    public void Save(List<SavedComputer> computers)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
-        var temp = file + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(computers, Options));
-        File.Move(temp, file, overwrite: true);
-    }
+    public List<SavedComputer> Load() => JsonFile.Load<List<SavedComputer>>(file) ?? [];
+    public void Save(List<SavedComputer> computers) => JsonFile.Save(file, computers);
 }
 
 /// <summary>

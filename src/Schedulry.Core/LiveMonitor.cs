@@ -27,6 +27,12 @@ public sealed record MonitorTiming
     /// <summary>Re-read every task in full, to catch definitions changed elsewhere.</summary>
     public int FullEveryTicks { get; init; } = 30;
     public int FullEveryTicksWithHistory { get; init; } = 150;
+    /// <summary>
+    /// While nobody is looking (the window is in the notification area) the ticks are this many
+    /// times further apart. Failures still show: the status sweep finds them, and with the history
+    /// log on its events wake the monitor at once.
+    /// </summary>
+    public int BackgroundSlower { get; init; } = 5;
 
     /// <summary>
     /// Another computer: every call crosses the network, so ask half as often. Starts and finishes
@@ -109,6 +115,23 @@ public sealed class LiveMonitor : IDisposable
 
     void OnHostEvent(string path) => Poke(path);
 
+    /// <summary>Nobody is looking: tick less often. Turning it off looks again at once.</summary>
+    public bool InBackground
+    {
+        get => _inBackground;
+        set
+        {
+            if (_inBackground == value)
+                return;
+            _inBackground = value;
+            if (!value)
+                _wake.Set();
+        }
+    }
+    volatile bool _inBackground;
+
+    TimeSpan Wait => _inBackground ? _timing.Tick * _timing.BackgroundSlower : _timing.Tick;
+
     void Loop()
     {
         while (!_stopping)
@@ -121,7 +144,7 @@ public sealed class LiveMonitor : IDisposable
             {
                 Failed?.Invoke(e);
             }
-            _wake.WaitOne(_timing.Tick);
+            _wake.WaitOne(Wait);
         }
     }
 

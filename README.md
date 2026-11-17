@@ -7,7 +7,7 @@ pressing Refresh, and it says what each task does in plain words.
 ![Schedulry, light theme](docs/screenshots/main-light.png)
 
 **Status: early development.** Browsing, live status, run history, editing, creating and importing tasks, stars and groups, Run, End and Delete work
-today, on this computer or another one on the network. Notifications and installers are on the way.
+today, on this computer or another one on the network, with a notification when a task fails. Installers are on the way.
 
 ## What it does differently
 
@@ -23,6 +23,7 @@ today, on this computer or another one on the network. Notifications and install
 | Windows' own 200 tasks mixed in with yours | Hidden until you switch them on |
 | Columns you can't make wider | Drag column edges and headers, and the divider beside the preview; your layout is remembered |
 | Folders are the only way to arrange tasks, and moving one changes it | Star tasks and put them in your own groups (a task can be in several); kept by Schedulry, so the tasks themselves never change |
+| A failed task stays quiet until you happen to open the window | A Windows notification when a run fails, even with the window closed (Schedulry keeps watching from the notification area); Windows' own tasks are left out unless you want them, and Alerts in a task's preview turns them off for that task |
 | Connect to Another Computer, then type the name again next time; "The RPC server is unavailable" | Computers you've used are one click away (with the account; a password only if you tick Remember, kept in Windows Credential Manager), and a failure says what to check: the name, the firewall rule, the account |
 
 ![Schedulry, dark theme, Windows' own tasks shown](docs/screenshots/windows-tasks-dark.png)
@@ -51,6 +52,11 @@ run as you; **Restart as Administrator** unlocks the rest. Windows keeps no task
 default; **Turn On History** switches it on (with your approval), which also makes starts and
 finishes appear the instant they happen.
 
+Closing the window leaves Schedulry in the notification area, watching for failed runs; its
+icon there opens it again or exits. **Settings** (the gear) turns that off, chooses which
+failures send a notification, and can start Schedulry with Windows. Only one copy runs at a
+time: starting it again brings the running one forward.
+
 ## How the live view works
 
 `LiveMonitor` keeps a copy of every task and asks Task Scheduler, on a background thread:
@@ -59,6 +65,9 @@ finishes appear the instant they happen.
 - every 6 seconds, the state and last result of your tasks, and every 36 seconds of Windows' own;
 - every minute, everything, to catch tasks added, changed or deleted elsewhere;
 - and, once the history log is on, each event as it's written, so a change shows at once.
+
+While the window is closed or minimised it asks five times less often. A failure still shows
+within about half a minute, or at once with the history log on.
 
 ## Screenshots
 

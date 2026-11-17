@@ -175,6 +175,23 @@ public sealed partial class TaskDetailViewModel : ObservableObject, IDisposable
             _shell.RemoveFromGroup(Row, group);
     }
 
+    // ---- Notifications for this task ----
+
+    /// <summary>Shown only where a failure would send a notification at all.</summary>
+    public bool CanNotify => _shell.Settings.Wants(Task);
+    public bool Notifies => !_shell.IsMuted(Row.Path);
+    public string NotifyText => Notifies ? "Alerts On" : "Alerts Off";
+
+    [RelayCommand]
+    void ToggleNotify() => _shell.SetMuted(Row.Path, Notifies);
+
+    public void RefreshMuted()
+    {
+        OnPropertyChanged(nameof(CanNotify));
+        OnPropertyChanged(nameof(Notifies));
+        OnPropertyChanged(nameof(NotifyText));
+    }
+
     public void RefreshGroups()
     {
         Groups = _shell.GroupsOf(Row.Path);

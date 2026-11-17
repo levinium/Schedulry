@@ -54,7 +54,6 @@
           </StackPanel>
         </Button>
         <Button Classes="neutral" Content="Import…" Command="{Binding ImportTaskCommand}" IsEnabled="{Binding IsBrowsing}" />
-        <ToggleSwitch IsChecked="{Binding ShowWindowsTasks}" OnContent="Showing Windows tasks" OffContent="Show Windows tasks" />
         <TextBlock Classes="secondary" Text="Sort by" VerticalAlignment="Center" />
         <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort}" MinWidth="120">
           <ComboBox.ItemTemplate>
@@ -68,6 +67,10 @@
             <ic:FluentIcon Icon="ArrowSort" FontSize="14" />
             <TextBlock Text="{Binding SortDirectionText}" />
           </StackPanel>
+        </Button>
+        <!-- Settings: the gear alone, so the search box keeps its room on a laptop screen. -->
+        <Button Classes="neutral" Padding="9,8" Command="{Binding ToggleSettingsCommand}" AutomationProperties.Name="Settings">
+          <ic:FluentIcon Icon="Settings" FontSize="16" />
         </Button>
       </StackPanel>
     </Grid>
@@ -158,6 +161,38 @@
           </StackPanel>
         </StackPanel>
       </Border>
+      <!-- Settings: alerts, the notification area, starting with Windows. For the whole app, whichever computer is showing. -->
+      <Border Classes="card" Padding="16,12" IsVisible="{Binding ShowSettings}">
+        <StackPanel Spacing="10" DataContext="{Binding Settings}" x:DataType="vm:SettingsViewModel">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Classes="h2" Text="Settings" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="neutral small" Content="Close"
+                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).ToggleSettingsCommand}" />
+          </Grid>
+          <WrapPanel ItemSpacing="28" LineSpacing="12">
+            <StackPanel Width="330" Spacing="2">
+              <CheckBox IsChecked="{Binding NotifyFailures}" Content="Notify me when a task fails" />
+              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Margin="28,0,0,0"
+                         Text="A Windows notification for each failed run. To stop them for one task, use Alerts in its preview." />
+              <CheckBox IsChecked="{Binding NotifyWindowsTasks}" IsEnabled="{Binding NotifyFailures}" Content="Include Windows' own tasks"
+                        Margin="28,6,0,0" />
+            </StackPanel>
+            <StackPanel Width="330" Spacing="2">
+              <CheckBox IsChecked="{Binding KeepRunningWhenClosed}" Content="Keep running when the window is closed" />
+              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Margin="28,0,0,0"
+                         Text="Schedulry stays in the notification area and keeps watching. Exit it from its icon there." />
+            </StackPanel>
+            <StackPanel Width="330" Spacing="2">
+              <CheckBox IsChecked="{Binding StartWithWindows}" Content="Start with Windows" />
+              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Margin="28,0,0,0"
+                         Text="Starts in the notification area when you sign in, so failures are noticed without opening it." />
+            </StackPanel>
+          </WrapPanel>
+          <Border Classes="banner error" IsVisible="{Binding HasProblem}">
+            <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
+          </Border>
+        </StackPanel>
+      </Border>
       <Border Classes="card" Padding="16,12" IsVisible="{Binding IsImporting}">
         <StackPanel Spacing="8" DataContext="{Binding Import}" x:DataType="ed:ImportViewModel">
           <TextBlock Classes="h2" Text="{Binding FileName, StringFormat='Import {0}'}" />
@@ -218,6 +253,8 @@
       <Border Classes="card" Background="{DynamicResource SidebarBg}">
         <ScrollViewer>
           <StackPanel Margin="0,0,0,10">
+            <!-- Windows' own tasks change every list and count, so the switch sits above them. -->
+            <ToggleSwitch IsChecked="{Binding ShowWindowsTasks}" OnContent="Windows tasks" OffContent="Windows tasks" Margin="14,8,12,0" />
             <TextBlock Classes="section" Text="STATUS" />
             <ListBox Classes="nav" ItemsSource="{Binding Views}" SelectedItem="{Binding SelectedView}">
               <ListBox.ItemTemplate>
@@ -493,6 +530,15 @@
                             <ic:FluentIcon Icon="Star" FontSize="14" IsVisible="{Binding !Row.IsStarred}" />
                           </Panel>
                           <TextBlock Text="{Binding StarText}" />
+                        </StackPanel>
+                      </Button>
+                      <Button Classes="neutral" Command="{Binding ToggleNotifyCommand}" IsVisible="{Binding CanNotify}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <Panel>
+                            <ic:FluentIcon Icon="Alert" FontSize="14" IsVisible="{Binding Notifies}" />
+                            <ic:FluentIcon Icon="AlertOff" FontSize="14" IsVisible="{Binding !Notifies}" />
+                          </Panel>
+                          <TextBlock Text="{Binding NotifyText}" />
                         </StackPanel>
                       </Button>
                       <Button Content="Turn On" Command="{Binding TurnOnCommand}" IsVisible="{Binding !Row.Task.Enabled}" />
