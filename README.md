@@ -18,9 +18,9 @@ today, on this computer or another one on the network, with a notification when 
 
 ## Download
 
-**[Download Schedulry-win-x64-Setup.exe](https://github.com/levinium/Schedulry/releases/download/v0.1.3/Schedulry-win-x64-Setup.exe)** (71 MB)
+**[Download Schedulry-win-x64-Setup.exe](https://github.com/levinium/Schedulry/releases/download/v0.1.4/Schedulry-win-x64-Setup.exe)** (71 MB)
 
-On an Arm PC, get **[Schedulry-win-arm64-Setup.exe](https://github.com/levinium/Schedulry/releases/download/v0.1.3/Schedulry-win-arm64-Setup.exe)** (67 MB)
+On an Arm PC, get **[Schedulry-win-arm64-Setup.exe](https://github.com/levinium/Schedulry/releases/download/v0.1.4/Schedulry-win-arm64-Setup.exe)** (67 MB)
 instead. To run it without installing, there is a portable zip for each beside them on the
 [releases page](https://github.com/levinium/Schedulry/releases).
 
