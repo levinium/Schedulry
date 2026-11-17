@@ -14,9 +14,17 @@
     <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" Margin="16,12,16,10" ColumnSpacing="14">
       <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
         <Image Source="/Assets/schedulry-256.png" Width="30" Height="30" />
-        <StackPanel VerticalAlignment="Center">
+        <StackPanel VerticalAlignment="Center" Spacing="2">
           <TextBlock Text="Schedulry" FontSize="16" FontWeight="SemiBold" />
-          <TextBlock Classes="muted" FontSize="12" Text="{Binding ComputerName}" />
+          <!-- The computer being looked at; opens the Computers card to switch. -->
+          <Button Classes="neutral small" Padding="6,1" Command="{Binding ToggleComputersCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+              <ic:FluentIcon Icon="Desktop" FontSize="12" VerticalAlignment="Center" IsVisible="{Binding IsLocal}" />
+              <ic:FluentIcon Icon="Server" FontSize="12" VerticalAlignment="Center" IsVisible="{Binding IsRemote}" />
+              <TextBlock FontSize="12" Text="{Binding ComputerName}" VerticalAlignment="Center" />
+              <ic:FluentIcon Icon="ChevronDown" FontSize="10" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
         </StackPanel>
       </StackPanel>
 
@@ -66,6 +74,84 @@
 
     <!-- Banners: admin rights, history log, a problem reading. -->
     <StackPanel Grid.Row="1" Margin="16,0,16,8" Spacing="8">
+      <!-- Computers: this one, ones used before, or another by name. -->
+      <Border Classes="card" Padding="16,12" IsVisible="{Binding ShowComputers}">
+        <StackPanel Spacing="10" DataContext="{Binding Computers}" x:DataType="vm:ComputersViewModel">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Classes="h2" Text="Computers" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="neutral small" Content="Close"
+                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).ToggleComputersCommand}" />
+          </Grid>
+          <ItemsControl ItemsSource="{Binding Rows}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel ItemSpacing="8" LineSpacing="8" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ComputerRow">
+                <Border Classes="subCard" Width="250" Padding="12,8">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <ic:FluentIcon Icon="Desktop" FontSize="18" VerticalAlignment="Center" IsVisible="{Binding IsThisComputer}"
+                                   Foreground="{DynamicResource TextMuted}" />
+                    <ic:FluentIcon Icon="Server" FontSize="18" VerticalAlignment="Center" IsVisible="{Binding !IsThisComputer}"
+                                   Foreground="{DynamicResource TextMuted}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                      <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Classes="muted" FontSize="12" Text="{Binding Detail}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                      <c:Chip Kind="Success" Content="Showing" IsVisible="{Binding IsCurrent}" />
+                      <Button Classes="primary small" Content="Open" IsVisible="{Binding CanConnect}"
+                              Command="{Binding $parent[ItemsControl].((vm:ComputersViewModel)DataContext).ConnectToCommand}"
+                              CommandParameter="{Binding}" />
+                      <Button Classes="chipRemove" IsVisible="{Binding CanForget}"
+                              Command="{Binding $parent[ItemsControl].((vm:ComputersViewModel)DataContext).ForgetCommand}"
+                              CommandParameter="{Binding}">
+                        <ic:FluentIcon Icon="Dismiss" FontSize="10" />
+                      </Button>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock Classes="fieldLabel" Text="Connect to Another Computer" Margin="0,4,0,0" />
+          <WrapPanel ItemSpacing="12" LineSpacing="8" IsEnabled="{Binding IsIdle}">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="muted" FontSize="12" Text="Computer name or IP address" />
+              <TextBox Text="{Binding Name}" Watermark="SERVER01" Width="240" />
+            </StackPanel>
+            <CheckBox IsChecked="{Binding UseOtherAccount}" Content="As another account" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+            <StackPanel Spacing="4" IsVisible="{Binding UseOtherAccount}">
+              <TextBlock Classes="muted" FontSize="12" Text="Account" />
+              <TextBox Text="{Binding Account}" Watermark="DOMAIN\name" Width="200" />
+            </StackPanel>
+            <StackPanel Spacing="4" IsVisible="{Binding UseOtherAccount}">
+              <TextBlock Classes="muted" FontSize="12" Text="Password (not kept)" />
+              <TextBox Text="{Binding Password}" PasswordChar="•" Width="200" />
+            </StackPanel>
+          </WrapPanel>
+          <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
+                     Text="You need to be an administrator on the other computer, and its firewall must allow remote task management. Only names you connect to are remembered, with the account; never a password." />
+          <Border Classes="banner error" IsVisible="{Binding HasProblem}">
+            <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
+          </Border>
+          <Border Classes="banner info" IsVisible="{Binding HasNote}">
+            <TextBlock Text="{Binding Note}" TextWrapping="Wrap" />
+          </Border>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Classes="primary" Content="Connect" Command="{Binding ConnectCommand}" IsDefault="True" IsVisible="{Binding IsIdle}" />
+            <TextBlock Classes="muted" FontSize="12" VerticalAlignment="Center" Text="{Binding ConnectBlocked}" />
+            <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsConnecting}">
+              <ProgressBar IsIndeterminate="True" Width="120" VerticalAlignment="Center" />
+              <TextBlock VerticalAlignment="Center" Text="{Binding ConnectingText}" />
+              <Button Classes="neutral" Content="Stop" Command="{Binding CancelConnectCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+      </Border>
       <Border Classes="card" Padding="16,12" IsVisible="{Binding IsImporting}">
         <StackPanel Spacing="8" DataContext="{Binding Import}" x:DataType="ed:ImportViewModel">
           <TextBlock Classes="h2" Text="{Binding FileName, StringFormat='Import {0}'}" />
@@ -111,7 +197,7 @@
         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
           <ic:FluentIcon Icon="History" FontSize="18" VerticalAlignment="Center" Foreground="{DynamicResource BadgeWarningFg}" />
           <TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap"
-                     Text="Task history is off in Windows. Turn it on to keep a record of every run and see starts and finishes the instant they happen. Windows asks for administrator approval." />
+                     Text="{Binding HistoryBannerText}" />
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
             <Button Classes="primary" Content="Turn On History" Command="{Binding TurnOnHistoryCommand}" />
             <Button Classes="neutral" Content="Not Now" Command="{Binding DismissHistoryBannerCommand}" />

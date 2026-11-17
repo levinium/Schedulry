@@ -29,12 +29,16 @@ public sealed class DemoSchedulerHost : ISchedulerHost
     readonly object _gate = new();
 
     /// <param name="clock">Defaults to the real clock; pass a fixed one for a still picture.</param>
-    public DemoSchedulerHost(Func<DateTime>? clock = null, bool elevated = false, bool historyEnabled = false)
+    /// <param name="computer">Another demo computer by name; null is the demo's own (CONTOSO-WS01).</param>
+    public DemoSchedulerHost(Func<DateTime>? clock = null, bool elevated = false, bool historyEnabled = false, string? computer = null, string? account = null)
     {
         _clock = clock ?? (() => DateTime.Now);
         var now = _clock();
         _epoch = now.Date;
-        IsElevated = elevated;
+        IsRemote = computer is not null;
+        ComputerName = computer?.ToUpperInvariant() ?? LocalName;
+        CurrentUser = account ?? @"CONTOSO\avery.lee";
+        IsElevated = elevated || IsRemote;
         HistoryEnabled = historyEnabled;
         foreach (var entry in DemoTasks.Build(now))
             _entries[entry.Task.Path] = new Entry
@@ -48,12 +52,31 @@ public sealed class DemoSchedulerHost : ISchedulerHost
             };
     }
 
-    public string ComputerName => "CONTOSO-WS01";
+    public const string LocalName = "CONTOSO-WS01";
+
+    /// <summary>
+    /// The demo's way of opening another computer. Any name works except ones starting "offline",
+    /// which fail the way a switched-off computer does.
+    /// </summary>
+    public static DemoSchedulerHost Connect(ConnectRequest request, Func<DateTime>? clock = null)
+    {
+        var name = ComputerNames.Normalise(request.Computer);
+        if (ComputerNames.IsThisComputer(name, LocalName))
+            return new DemoSchedulerHost(clock);
+        if (name!.StartsWith("offline", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"{name} didn't answer. It may be switched off, or its firewall may block remote task management (the Windows Firewall rule group \"Remote Scheduled Tasks Management\").");
+        return new DemoSchedulerHost(clock, historyEnabled: true, computer: name, account: request.Account);
+    }
+
+    public string ComputerName { get; }
     public bool IsElevated { get; set; }
-    public string CurrentUser => @"CONTOSO\avery.lee";
+    public bool IsRemote { get; }
+    public string CurrentUser { get; }
     public bool HistoryEnabled { get; set; }
 
     public bool RecheckHistory() => HistoryEnabled;
+
+    public void EnableHistory() => HistoryEnabled = true;
 
     public event Action<string>? TaskEvent
     {

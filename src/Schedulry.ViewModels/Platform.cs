@@ -18,6 +18,13 @@ public static class Platform
     /// <summary>Turns on Task Scheduler's history log (a UAC prompt when not elevated). False if it didn't happen.</summary>
     public static Func<Task<bool>> EnableHistory { get; set; } = () => Task.FromResult(false);
 
+    /// <summary>
+    /// Opens a computer's Task Scheduler and checks it answers (slow: called off the UI thread).
+    /// Throws with a plain-words reason when it can't.
+    /// </summary>
+    public static Func<Schedulry.Core.ConnectRequest, Schedulry.Core.ISchedulerHost> Connect { get; set; } =
+        _ => throw new InvalidOperationException("Connecting to other computers isn't available here.");
+
     public static Action<string> CopyText { get; set; } = _ => { };
 
     /// <summary>Asks for a file to use (title); its full path, or null if the person cancelled.</summary>

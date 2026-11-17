@@ -9,10 +9,16 @@ public interface ISchedulerHost : IDisposable
     /// <summary>The computer's name, as shown in the title bar.</summary>
     string ComputerName { get; }
 
-    /// <summary>True when this app runs as administrator, so every task can be changed.</summary>
+    /// <summary>
+    /// True when every task can be changed: this app runs as administrator, or this is another
+    /// computer (reaching another computer's Task Scheduler at all takes an administrator there).
+    /// </summary>
     bool IsElevated { get; }
 
-    /// <summary>The account this app runs as (DOMAIN\user), to tell which tasks are the user's own.</summary>
+    /// <summary>Another computer, reached over the network.</summary>
+    bool IsRemote { get; }
+
+    /// <summary>The account in use (DOMAIN\user), to tell which tasks are the user's own.</summary>
     string CurrentUser { get; }
 
     /// <summary>Every task in every folder, read in full. Folders the account can't open are skipped.</summary>
@@ -45,6 +51,12 @@ public interface ISchedulerHost : IDisposable
     /// was turned on, so the app and the host agree straight away.
     /// </summary>
     bool RecheckHistory();
+
+    /// <summary>
+    /// Turns the history log on directly, with the rights already held: used for another computer,
+    /// where there is no UAC prompt to ask through. Throws when it isn't allowed.
+    /// </summary>
+    void EnableHistory();
 
     /// <summary>
     /// Raised from any thread with a task's path when the history log records something about it

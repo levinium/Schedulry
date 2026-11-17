@@ -215,6 +215,7 @@
                             <TextBox Text="{Binding Program}" Watermark="C:\Program Files\PowerShell\7\pwsh.exe" />
                             <Button Grid.Column="1" Classes="neutral" Content="Browse…" Command="{Binding BrowseCommand}" />
                           </Grid>
+                          <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding HasBrowseNote}" Text="{Binding BrowseNote}" />
                           <TextBlock Classes="fieldLabel" Text="Arguments (optional)" />
                           <TextBox Text="{Binding Arguments}" Watermark="-NoProfile -File &quot;C:\Scripts\Backup.ps1&quot;" />
                           <TextBlock Classes="fieldLabel" Text="Start in (optional)" />

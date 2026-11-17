@@ -85,7 +85,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject
         foreach (var trigger in draft.Triggers)
             AddTriggerEditor(new TriggerEditor(trigger, RemoveTrigger));
         foreach (var action in draft.Actions)
-            AddActionEditor(new ActionEditor(action, RemoveAction));
+            AddActionEditor(new ActionEditor(action, RemoveAction, RemoteName));
 
         var s = draft.Settings;
         LimitRunTime = s.StopAfter is not null;
@@ -161,6 +161,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject
     public bool HasSaveProblem => SaveProblem is not null;
     public string SaveText => IsNew ? "Create Task" : "Save Changes";
     /// <summary>Whether the person can save here: their own task, or the app runs as administrator.</summary>
+    string? RemoteName => _shell.IsRemote ? _shell.ComputerName : null;
+
     public bool CanChange => _shell.IsElevated || Accounts.Same(RunAs, _shell.CurrentUser)
                              && (_original is null || Accounts.Same(_original.RunAs, _shell.CurrentUser));
     public string? RightsNote => CanChange ? null
@@ -216,7 +218,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject
     void AddTrigger() => AddTriggerEditor(new TriggerEditor(null, RemoveTrigger));
 
     [RelayCommand]
-    void AddAction() => AddActionEditor(new ActionEditor(null, RemoveAction));
+    void AddAction() => AddActionEditor(new ActionEditor(null, RemoveAction, RemoteName));
 
     void AddTriggerEditor(TriggerEditor editor)
     {

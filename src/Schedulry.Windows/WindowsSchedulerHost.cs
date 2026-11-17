@@ -8,7 +8,7 @@ using WinTask = Microsoft.Win32.TaskScheduler.Task;
 namespace Schedulry.Windows;
 
 /// <summary>
-/// Task Scheduler on this computer (or, later, another one), through its COM API. Each thread gets
+/// Task Scheduler on this computer or another one, through its COM API. Each thread gets
 /// its own connection: the monitor reads on its thread while buttons act on pool threads, and COM
 /// objects are not passed between them.
 /// </summary>
@@ -17,26 +17,49 @@ public sealed partial class WindowsSchedulerHost : ISchedulerHost
     public const string HistoryLog = "Microsoft-Windows-TaskScheduler/Operational";
 
     readonly string? _computer;
+    readonly string? _user;
+    readonly string? _domain;
+    readonly string? _password;   // in memory only, for each thread's connection; never written anywhere
     readonly ThreadLocal<TaskService> _service;
     readonly object _watchGate = new();
     EventLogWatcher? _watcher;
     bool _historyEnabled;
     DateTime _historyCheckedAt = DateTime.MinValue;
 
-    public WindowsSchedulerHost(string? computer = null)
+    /// <summary>
+    /// This computer, or another one by name. <paramref name="account"/> (DOMAIN\user or user@domain)
+    /// and <paramref name="password"/> sign in to the other computer as someone else. To open another
+    /// computer use <see cref="Connect"/>, which checks the connection and explains a failure.
+    /// </summary>
+    public WindowsSchedulerHost(string? computer = null, string? account = null, string? password = null)
     {
-        _computer = computer;
-        _service = new ThreadLocal<TaskService>(() => new TaskService(_computer), trackAllValues: true);
+        _computer = ComputerNames.Normalise(computer);
+        (_domain, _user) = SplitAccount(account);
+        _password = _user is null ? null : password;
+        _service = new ThreadLocal<TaskService>(() => new TaskService(_computer, _user, _domain, _password), trackAllValues: true);
         using var identity = WindowsIdentity.GetCurrent();
-        CurrentUser = identity.Name;
-        IsElevated = new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+        IsRemote = _computer is not null;
+        CurrentUser = _user is null ? identity.Name : _domain is null ? _user : _domain + "\\" + _user;
+        // Reaching another computer's Task Scheduler at all takes an administrator there.
+        IsElevated = IsRemote || new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
     }
 
     TaskService Service => _service.Value!;
 
     public string ComputerName => _computer ?? Environment.MachineName;
     public bool IsElevated { get; }
+    public bool IsRemote { get; }
     public string CurrentUser { get; }
+
+    static (string? Domain, string? User) SplitAccount(string? account)
+    {
+        account = account?.Trim();
+        if (string.IsNullOrEmpty(account))
+            return (null, null);
+        var slash = account.IndexOf('\\');
+        // user@domain goes through whole: Windows understands it.
+        return slash > 0 ? (account[..slash], account[(slash + 1)..]) : (null, account);
+    }
 
     public event Action<string>? TaskEvent;
 
@@ -153,7 +176,28 @@ public sealed partial class WindowsSchedulerHost : ISchedulerHost
         return HistoryEnabled;
     }
 
-    EventLogSession Session() => _computer is null ? new EventLogSession() : new EventLogSession(_computer);
+    EventLogSession Session()
+    {
+        if (_computer is null)
+            return new EventLogSession();
+        if (_user is null)
+            return new EventLogSession(_computer);
+        using var secure = new System.Security.SecureString();
+        foreach (var c in _password ?? "")
+            secure.AppendChar(c);
+        return new EventLogSession(_computer, _domain, _user, secure, SessionAuthentication.Default);
+    }
+
+    public void EnableHistory()
+    {
+        using (var session = Session())
+        using (var config = new EventLogConfiguration(HistoryLog, session))
+        {
+            config.IsEnabled = true;
+            config.SaveChanges();
+        }
+        RecheckHistory();
+    }
 
     /// <summary>Follows the history log while it's on, so starts, finishes and edits show at once.</summary>
     void UpdateWatcher()

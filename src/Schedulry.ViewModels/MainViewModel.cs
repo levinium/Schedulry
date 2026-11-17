@@ -62,17 +62,19 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     readonly IOrganizerStore _store;
     readonly OrganizerData _organizer;
 
-    public MainViewModel(ISchedulerHost host, MonitorTiming? timing = null, Func<DateTime>? clock = null, IOrganizerStore? organizer = null)
+    public MainViewModel(ISchedulerHost host, MonitorTiming? timing = null, Func<DateTime>? clock = null, IOrganizerStore? organizer = null,
+        IComputerStore? computers = null)
     {
         Host = host;
         _clock = clock ?? (() => DateTime.Now);
         _store = organizer ?? new MemoryOrganizerStore();
         _organizer = _store.Load();
         RebuildCollections();
-        Monitor = new LiveMonitor(host, timing);
+        Monitor = new LiveMonitor(host, timing ?? (host.IsRemote ? MonitorTiming.Remote : null));
         IsElevated = host.IsElevated;
         CurrentUser = host.CurrentUser;
         ComputerName = host.ComputerName;
+        Computers = new ComputersViewModel(this, computers ?? new MemoryComputerStore());
 
         Views =
         [
@@ -105,6 +107,31 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public string ComputerName { get; }
     public string CurrentUser { get; }
     [ObservableProperty] public partial bool IsElevated { get; private set; }
+
+    // ---- Computers ----
+
+    public bool IsRemote => Host.IsRemote;
+    public bool IsLocal => !Host.IsRemote;
+    public ComputersViewModel Computers { get; }
+    [ObservableProperty] public partial bool ShowComputers { get; set; }
+
+    /// <summary>
+    /// Raised once another computer has answered. The app replaces this window's view model with
+    /// one for <c>host</c> and disposes this one; with no handler the host is closed again.
+    /// </summary>
+    public event Action<ISchedulerHost>? SwitchRequested;
+
+    [RelayCommand]
+    void ToggleComputers() => ShowComputers = !ShowComputers;
+
+    internal void SwitchTo(ISchedulerHost host)
+    {
+        ShowComputers = false;
+        if (SwitchRequested is { } handler)
+            handler(host);
+        else
+            host.Dispose();
+    }
 
     public ObservableCollection<ViewItem> Views { get; }
     public ObservableCollection<FolderItem> Folders { get; } = [];
@@ -160,6 +187,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public bool HasDetail => Detail is not null;
     public bool IsEmpty => !IsLoading && Rows.Count == 0 && !ShowActivity;
     public string Title => $"Schedulry · {ComputerName}";
+    public string HistoryBannerText => Host.IsRemote
+        ? $"Task history is off on {ComputerName}. Turn it on to keep a record of every run there and see starts and finishes the instant they happen."
+        : "Task history is off in Windows. Turn it on to keep a record of every run and see starts and finishes the instant they happen. Windows asks for administrator approval.";
     public string SortDirectionText => SortDescending ? "Descending" : "Ascending";
 
     partial void OnIsElevatedChanged(bool value) => OnPropertyChanged(nameof(ShowAdminBanner));
@@ -273,7 +303,32 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     async Task TurnOnHistoryAsync()
     {
         BannerProblem = null;
-        var done = await Platform.EnableHistory();
+        bool done;
+        if (Host.IsRemote)
+        {
+            // Another computer: no UAC prompt to ask through; the administrator connection is enough.
+            string? problem = null;
+            await Platform.Background(() =>
+            {
+                try
+                {
+                    Host.EnableHistory();
+                }
+                catch (Exception e)
+                {
+                    problem = e.Message;
+                }
+                return Task.CompletedTask;
+            });
+            done = problem is null;
+            if (problem is not null)
+            {
+                BannerProblem = $"Task history is still off on {ComputerName}: {problem}";
+                return;
+            }
+        }
+        else
+            done = await Platform.EnableHistory();
         if (!done)
         {
             BannerProblem = "Task history is still off.";

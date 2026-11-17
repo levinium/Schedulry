@@ -21,14 +21,35 @@ public partial class App : Application
         {
             Platform.Post = action => Dispatcher.UIThread.Post(action);
             var demo = Program.Args.Contains("--demo", StringComparer.OrdinalIgnoreCase);
-            ISchedulerHost host = demo ? new DemoSchedulerHost() : new WindowsSchedulerHost();
-            // Stars and groups: one file per computer, so a remote computer later gets its own.
-            IOrganizerStore organizer = demo
-                ? new MemoryOrganizerStore(DemoOrganizer.Sample())
-                : new JsonOrganizerStore(Path.Combine(Program.DataFolder, $"organize-{host.ComputerName.ToLowerInvariant()}.json"));
-            var main = new MainViewModel(host, organizer: organizer);
+            Platform.Connect = demo ? request => DemoSchedulerHost.Connect(request) : WindowsSchedulerHost.Connect;
+            IComputerStore computers = demo
+                ? new MemoryComputerStore([new SavedComputer("FILESRV01"), new SavedComputer("BUILD-02", @"CONTOSO\ops.admin")])
+                : new JsonComputerStore(Path.Combine(Program.DataFolder, "computers.json"));
             Views.MainView.ColumnLayoutFile = Path.Combine(Program.DataFolder, "columns.json");
-            var window = new MainWindow { DataContext = main };
+            var window = new MainWindow();
+            MainViewModel? main = null;
+
+            // One view model per computer. Switching builds the next one, then retires the last.
+            void Show(ISchedulerHost host)
+            {
+                // Stars and groups: one file per computer.
+                IOrganizerStore organizer = demo
+                    ? new MemoryOrganizerStore(host.IsRemote ? null : DemoOrganizer.Sample())
+                    : new JsonOrganizerStore(Path.Combine(Program.DataFolder, $"organize-{host.ComputerName.ToLowerInvariant()}.json"));
+                var next = new MainViewModel(host, organizer: organizer, computers: computers);
+                next.SwitchRequested += Show;
+                var previous = main;
+                main = next;
+                window.DataContext = next;
+                if (previous is not null)
+                {
+                    previous.SwitchRequested -= Show;
+                    // Its COM connections close off the UI thread; a remote one can take a moment.
+                    _ = Task.Run(previous.Dispose);
+                    next.Start();
+                }
+            }
+            Show(demo ? new DemoSchedulerHost() : new WindowsSchedulerHost());
 
             Platform.RestartAsAdmin = () =>
             {
@@ -83,9 +104,9 @@ public partial class App : Application
                 e.Handled = true;
             };
             desktop.MainWindow = window;
-            desktop.ShutdownRequested += (_, _) => main.Dispose();
-            window.Opened += (_, _) => main.Start();
-            var clock = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => main.RefreshClock());
+            desktop.ShutdownRequested += (_, _) => main?.Dispose();
+            window.Opened += (_, _) => main?.Start();
+            var clock = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => main?.RefreshClock());
             clock.Start();
         }
 

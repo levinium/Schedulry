@@ -78,9 +78,13 @@ public sealed partial class ActionEditor : EditorPart
     readonly ActionInfo? _original;
     readonly Action<ActionEditor> _remove;
 
-    public ActionEditor(DraftAction? action, Action<ActionEditor> remove)
+    readonly string? _remoteComputer;
+
+    /// <param name="remoteComputer">The other computer the task is on, if any: Browse only sees this one's files.</param>
+    public ActionEditor(DraftAction? action, Action<ActionEditor> remove, string? remoteComputer = null)
     {
         _remove = remove;
+        _remoteComputer = remoteComputer;
         _original = action?.Action;
         Source = action?.Source;
         Program = action?.Action.Kind == ActionKind.Program ? action.Action.Path : "";
@@ -101,7 +105,12 @@ public sealed partial class ActionEditor : EditorPart
     [RelayCommand]
     void Remove() => _remove(this);
 
-    [RelayCommand]
+    public bool CanBrowse => _remoteComputer is null;
+    public string? BrowseNote => _remoteComputer is null ? null
+        : $"Type the path as it is on {_remoteComputer}. Browse only sees the files on this computer.";
+    public bool HasBrowseNote => BrowseNote is not null;
+
+    [RelayCommand(CanExecute = nameof(CanBrowse))]
     async Task BrowseAsync()
     {
         if (await Platform.PickFile("Choose the Program to Run") is { } path)

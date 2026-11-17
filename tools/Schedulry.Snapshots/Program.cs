@@ -76,6 +76,20 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         vm.Editor!.Tab = Schedulry.ViewModels.Editor.ReviewTab.PowerShell;
     });
 
+    // Switching computers: the card, with another account being filled in.
+    Render($"computers-{suffix}", new DemoSchedulerHost(() => moment), vm =>
+    {
+        vm.SelectedRow = vm.Rows.First(r => r.Name == "Sync payroll exports");
+        vm.ShowComputers = true;
+        vm.Computers.Name = "BUILD-02";
+        vm.Computers.UseOtherAccount = true;
+        vm.Computers.Account = @"CONTOSO\ops.admin";
+    });
+
+    // Looking at another computer.
+    Render($"remote-{suffix}", new DemoSchedulerHost(() => moment, historyEnabled: true, computer: "FILESRV01"), vm =>
+        vm.SelectedRow = vm.Rows.First(r => r.Name == "Mirror data to NAS"));
+
     Render($"windows-tasks-{suffix}", new DemoSchedulerHost(() => moment, elevated: true, historyEnabled: true), vm =>
     {
         vm.ShowWindowsTasks = true;
@@ -89,7 +103,10 @@ return 0;
 
 void Render(string name, DemoSchedulerHost host, Action<MainViewModel> arrange, int width = 1440, int height = 900)
 {
-    using var vm = new MainViewModel(host, clock: () => moment, organizer: new Schedulry.Core.MemoryOrganizerStore(DemoOrganizer.Sample()));
+    var computers = new Schedulry.Core.MemoryComputerStore(
+        [new Schedulry.Core.SavedComputer("FILESRV01"), new Schedulry.Core.SavedComputer("BUILD-02", @"CONTOSO\ops.admin")]);
+    using var vm = new MainViewModel(host, clock: () => moment, computers: computers,
+        organizer: new Schedulry.Core.MemoryOrganizerStore(host.IsRemote ? null : DemoOrganizer.Sample()));
     vm.Monitor.Step();   // the first full read, raised inline
     arrange(vm);
     var window = new MainWindow { Width = width, Height = height, DataContext = vm };

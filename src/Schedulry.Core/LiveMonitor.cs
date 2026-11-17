@@ -27,6 +27,19 @@ public sealed record MonitorTiming
     /// <summary>Re-read every task in full, to catch definitions changed elsewhere.</summary>
     public int FullEveryTicks { get; init; } = 30;
     public int FullEveryTicksWithHistory { get; init; } = 150;
+
+    /// <summary>
+    /// Another computer: every call crosses the network, so ask half as often. Starts and finishes
+    /// still show within a few seconds; with its history log readable they show at once.
+    /// </summary>
+    public static MonitorTiming Remote { get; } = new()
+    {
+        Tick = TimeSpan.FromSeconds(3),
+        StatusEveryTicks = 4,
+        StatusEveryTicksWithHistory = 20,
+        FullEveryTicks = 40,
+        FullEveryTicksWithHistory = 200,
+    };
 }
 
 /// <summary>
