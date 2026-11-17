@@ -187,6 +187,11 @@
               <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Margin="28,0,0,0"
                          Text="Starts in the notification area when you sign in, so failures are noticed without opening it." />
             </StackPanel>
+            <StackPanel Width="330" Spacing="2">
+              <CheckBox IsChecked="{Binding AllowRemote}" IsEnabled="{Binding CanChangeRemote}" Content="Let other computers manage this PC's tasks" />
+              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Margin="28,0,0,0"
+                         Text="Opens Windows Firewall for remote task management and run history. Asks for administrator approval. Other computers still need an administrator account on this PC." />
+            </StackPanel>
           </WrapPanel>
           <Border Classes="banner error" IsVisible="{Binding HasProblem}">
             <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />

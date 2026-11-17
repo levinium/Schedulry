@@ -30,7 +30,7 @@ public partial class App : Application
             IPasswordVault passwords = demo ? new MemoryPasswordVault() : new CredentialVault();
             var settings = demo
                 ? new SettingsViewModel(new MemorySettingsStore())
-                : new SettingsViewModel(new JsonSettingsStore(Path.Combine(Program.DataFolder, "settings.json")), new StartupRegistration());
+                : new SettingsViewModel(new JsonSettingsStore(Path.Combine(Program.DataFolder, "settings.json")), new StartupRegistration(), new RemoteAccess());
             Views.MainView.ColumnLayoutFile = Path.Combine(Program.DataFolder, "columns.json");
             var window = new MainWindow();
             MainViewModel? main = null;

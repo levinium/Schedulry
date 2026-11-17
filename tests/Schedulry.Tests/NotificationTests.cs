@@ -159,6 +159,73 @@ public class NotificationTests
         Assert.Equal("Couldn't change starting with Windows: Access is denied.", settings.Problem);
     }
 
+    /// <summary>A firewall stand-in: Answer is what the administrator prompt returns, or Fail throws.</summary>
+    sealed class FakeRemoteAccess : IRemoteAccess
+    {
+        public bool IsOn { get; set; }
+        public bool Answer { get; set; } = true;
+        public Exception? Fail { get; set; }
+        public int Calls { get; private set; }
+
+        public System.Threading.Tasks.Task<bool> SetAsync(bool on)
+        {
+            Calls++;
+            if (Fail is not null)
+                throw Fail;
+            if (Answer)
+                IsOn = on;
+            return System.Threading.Tasks.Task.FromResult(Answer);
+        }
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Allowing_remote_access_changes_the_firewall()
+    {
+        var remote = new FakeRemoteAccess();
+        var settings = new SettingsViewModel(new MemorySettingsStore(), remote: remote);
+        Assert.False(settings.AllowRemote);
+        settings.AllowRemote = true;
+        await settings.RemoteChange;
+        Assert.True(remote.IsOn);
+        Assert.True(settings.AllowRemote);
+        Assert.Null(settings.Problem);
+        Assert.True(settings.CanChangeRemote);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Declining_the_administrator_prompt_puts_the_switch_back_quietly()
+    {
+        var remote = new FakeRemoteAccess { Answer = false };
+        var settings = new SettingsViewModel(new MemorySettingsStore(), remote: remote);
+        settings.AllowRemote = true;
+        await settings.RemoteChange;
+        Assert.False(settings.AllowRemote);
+        Assert.Null(settings.Problem);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task A_firewall_that_refuses_says_so()
+    {
+        var remote = new FakeRemoteAccess { Fail = new InvalidOperationException("Windows Firewall didn't take the change (code 5).") };
+        var settings = new SettingsViewModel(new MemorySettingsStore(), remote: remote);
+        settings.AllowRemote = true;
+        await settings.RemoteChange;
+        Assert.False(settings.AllowRemote);
+        Assert.Equal("Couldn't change whether other computers can manage this one: Windows Firewall didn't take the change (code 5).", settings.Problem);
+    }
+
+    [Fact]
+    public void Opening_settings_reads_the_firewall_again_without_changing_it()
+    {
+        var remote = new FakeRemoteAccess();
+        var settings = new SettingsViewModel(new MemorySettingsStore(), remote: remote);
+        using var vm = new MainViewModel(new DemoSchedulerHost(() => _now), EveryTick, () => _now, settings: settings);
+        remote.IsOn = true;   // turned on outside the app
+        vm.ToggleSettingsCommand.Execute(null);
+        Assert.True(settings.AllowRemote);
+        Assert.Equal(0, remote.Calls);
+    }
+
     [Fact]
     public void Settings_and_computers_cards_take_turns()
     {

@@ -26,6 +26,13 @@ internal static class Program
             .OnBeforeUninstallFastCallback(_ => Uninstalling())
             .Run();
 
+        // An elevated copy started only to change the firewall for remote access: it does that and exits.
+        if (Windows.RemoteAccess.RunFromArgs(args) is int code)
+        {
+            Environment.ExitCode = code;
+            return;
+        }
+
         bool Has(string flag) => args.Contains(flag, StringComparer.OrdinalIgnoreCase);
         StartInTray = Has(TrayFlag);
         // Windows adds -ToastActivated when it starts the app for a notification click.

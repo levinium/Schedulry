@@ -68,6 +68,19 @@ icon there opens it again or exits. **Settings** (the gear) turns that off, choo
 failures send a notification, and can start Schedulry with Windows. Only one copy runs at a
 time: starting it again brings the running one forward.
 
+To manage a computer's tasks from another one, the computer being managed has to let it in:
+Windows ships the firewall rules for remote task management turned off, and the other computer
+then gets "The request is not supported". On that computer, **Settings** → **Let other
+computers manage this PC's tasks** turns on the rule groups *Remote Scheduled Tasks Management*
+and *Remote Event Log Management* (with your approval). Without Schedulry there, the same in an
+administrator PowerShell:
+
+```powershell
+Enable-NetFirewallRule -DisplayGroup 'Remote Scheduled Tasks Management','Remote Event Log Management'
+```
+
+Connecting still takes an administrator account on that computer.
+
 ## How the live view works
 
 `LiveMonitor` keeps a copy of every task and asks Task Scheduler, on a background thread:

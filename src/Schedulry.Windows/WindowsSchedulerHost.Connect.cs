@@ -14,6 +14,7 @@ public sealed partial class WindowsSchedulerHost
     const int PasswordExpired = unchecked((int)0x80070532);
     const int AccountLocked = unchecked((int)0x80070775);
     const int Timeout = unchecked((int)0x800705B4);
+    const int NotSupported = unchecked((int)0x80070032);   // the target's firewall blocks remote task management
 
     /// <summary>
     /// Opens the computer the request names and makes one call, so a wrong name, a closed firewall or
@@ -56,6 +57,8 @@ public sealed partial class WindowsSchedulerHost
             BadNetPath or BadNetName => $"Couldn't find {computer} on the network. Check the name, or try its full name or IP address.",
             RpcUnavailable or RpcCallFailed or Timeout =>
                 $"{computer} didn't answer. It may be switched off, or its firewall may block remote task management (the Windows Firewall rule group \"Remote Scheduled Tasks Management\").",
+            NotSupported =>
+                $"{computer} doesn't allow remote task management yet. To allow it, open Schedulry on {computer}, go to Settings and turn on \"Let other computers manage this PC's tasks\". Without Schedulry there, run this in an administrator PowerShell on {computer}:Enable-NetFirewallRule -DisplayGroup 'Remote Scheduled Tasks Management','Remote Event Log Management'",
             _ when e is EventLogException => $"Couldn't read {computer}'s event log: {e.Message}",
             _ => $"Couldn't connect to {computer}: {e.Message}",
         };

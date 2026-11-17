@@ -12,18 +12,84 @@ public sealed partial class SettingsViewModel : ObservableObject
     readonly ISettingsStore _store;
     readonly AppSettings _settings;
     readonly IStartup _startup;
+    readonly IRemoteAccess _remote;
     bool _loading = true;
 
-    public SettingsViewModel(ISettingsStore store, IStartup? startup = null)
+    public SettingsViewModel(ISettingsStore store, IStartup? startup = null, IRemoteAccess? remote = null)
     {
         _store = store;
         _startup = startup ?? new NoStartup();
+        _remote = remote ?? new NoRemoteAccess();
         _settings = store.Load();
         NotifyFailures = _settings.NotifyFailures;
         NotifyWindowsTasks = _settings.NotifyWindowsTasks;
         KeepRunningWhenClosed = _settings.KeepRunningWhenClosed;
         StartWithWindows = _startup.IsOn;
+        AllowRemote = _remote.IsOn;
         _loading = false;
+    }
+
+    /// <summary>Other computers may manage this PC's tasks (the firewall lets them in).</summary>
+    [ObservableProperty] public partial bool AllowRemote { get; set; }
+
+    /// <summary>Waiting on the administrator prompt: the switch can't be flipped again meanwhile.</summary>
+    [ObservableProperty] public partial bool RemoteBusy { get; private set; }
+
+    public bool CanChangeRemote => !RemoteBusy;
+    partial void OnRemoteBusyChanged(bool value) => OnPropertyChanged(nameof(CanChangeRemote));
+
+    /// <summary>The change in progress, if any (finished otherwise). Tests wait on it.</summary>
+    public Task RemoteChange { get; private set; } = Task.CompletedTask;
+
+    /// <summary>Reads again what can change outside the app; called when the Settings card opens.</summary>
+    public void Refresh()
+    {
+        if (RemoteBusy)
+            return;
+        _loading = true;
+        AllowRemote = _remote.IsOn;
+        StartWithWindows = _startup.IsOn;
+        _loading = false;
+    }
+
+    partial void OnAllowRemoteChanged(bool value)
+    {
+        if (_loading)
+            return;
+        RemoteChange = ChangeRemoteAsync(value);
+    }
+
+    async Task ChangeRemoteAsync(bool on)
+    {
+        RemoteBusy = true;
+        try
+        {
+            // False means No at the administrator prompt: nothing changed and nothing to explain.
+            await _remote.SetAsync(on);
+            Problem = null;
+        }
+        catch (Exception e)
+        {
+            Problem = $"Couldn't change whether other computers can manage this one: {e.Message}";
+        }
+        finally
+        {
+            // The switch shows what Windows really has.
+            _loading = true;
+            AllowRemote = _remote.IsOn;
+            _loading = false;
+            RemoteBusy = false;
+        }
+    }
+
+    sealed class NoRemoteAccess : IRemoteAccess
+    {
+        public bool IsOn { get; private set; }
+        public Task<bool> SetAsync(bool on)
+        {
+            IsOn = on;
+            return Task.FromResult(true);
+        }
     }
 
     [ObservableProperty] public partial bool NotifyFailures { get; set; }

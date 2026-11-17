@@ -80,6 +80,19 @@ public interface IStartup
     void Set(bool on);
 }
 
+/// <summary>
+/// Whether other computers may manage this one's tasks: on Windows, the firewall rule groups for
+/// remote task management and the remote event log. Changing it needs administrator approval.
+/// </summary>
+public interface IRemoteAccess
+{
+    /// <summary>Read fresh each time: someone may change the firewall outside the app.</summary>
+    bool IsOn { get; }
+
+    /// <summary>False when the person declined the administrator prompt.</summary>
+    Task<bool> SetAsync(bool on);
+}
+
 public interface ISettingsStore
 {
     AppSettings Load();

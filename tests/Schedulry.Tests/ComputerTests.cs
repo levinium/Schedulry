@@ -298,8 +298,17 @@ public class ComputerTests
     [InlineData(unchecked((int)0x8007052E), "SERVER01 didn't accept that account name and password.")]
     [InlineData(unchecked((int)0x80070005), "SERVER01 refused your account.")]
     [InlineData(unchecked((int)0x80004005), "Couldn't connect to SERVER01:")]
+    [InlineData(unchecked((int)0x80070032), "SERVER01 doesn't allow remote task management yet.")]
     public void Connection_failures_are_put_into_words(int code, string start) =>
         Assert.StartsWith(start, WindowsSchedulerHost.Describe(new COMException("x", code), "SERVER01", null));
+
+    [Fact]
+    public void A_closed_firewall_points_to_the_setting_on_that_computer()
+    {
+        var text = WindowsSchedulerHost.Describe(new COMException("x", unchecked((int)0x80070032)), "SERVER01", null);
+        Assert.Contains("open Schedulry on SERVER01, go to Settings and turn on \"Let other computers manage this PC's tasks\"", text);
+        Assert.Contains("Enable-NetFirewallRule", text);
+    }
 
     [Fact]
     public void Access_denied_names_the_account_used()

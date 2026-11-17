@@ -145,7 +145,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         ShowSettings = !ShowSettings;
         if (ShowSettings)
+        {
             ShowComputers = false;
+            Settings.Refresh();
+        }
     }
 
     /// <summary>The window is hidden in the notification area: the monitor looks less often.</summary>
