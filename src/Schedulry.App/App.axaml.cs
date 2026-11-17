@@ -36,6 +36,12 @@ public partial class App : Application
             MainViewModel? main = null;
             var exiting = false;
             var tray = BuildTray(settings, OpenWindow, Exit);
+            UpdateChecker.Start(() =>
+            {
+                exiting = true;
+                tray.IsVisible = false;
+                main?.Dispose();
+            });
 
             // Stars, groups and muted alerts: one file per computer.
             string OrganizerFile(string computer) => Path.Combine(Program.DataFolder, $"organize-{computer.ToLowerInvariant()}.json");
@@ -218,6 +224,15 @@ public partial class App : Application
         openItem.Click += (_, _) => open();
         var exitItem = new NativeMenuItem("Exit");
         exitItem.Click += (_, _) => exit();
+        // Shown once a newer version has downloaded.
+        var update = AppUpdate.Current;
+        var updateItem = new NativeMenuItem { IsVisible = false };
+        updateItem.Click += (_, _) => update.RestartCommand.Execute(null);
+        update.PropertyChanged += (_, _) =>
+        {
+            updateItem.Header = update.RestartText;
+            updateItem.IsVisible = update.IsReady;
+        };
         var alerts = new NativeMenuItem("Failure Alerts") { ToggleType = MenuItemToggleType.CheckBox, IsChecked = settings.NotifyFailures };
         alerts.Click += (_, _) => settings.NotifyFailures = !settings.NotifyFailures;
         var startup = new NativeMenuItem("Start with Windows") { ToggleType = MenuItemToggleType.CheckBox, IsChecked = settings.StartWithWindows };
@@ -235,6 +250,7 @@ public partial class App : Application
             Menu =
             [
                 openItem,
+                updateItem,
                 new NativeMenuItemSeparator(),
                 alerts,
                 startup,

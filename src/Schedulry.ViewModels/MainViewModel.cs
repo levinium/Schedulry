@@ -136,6 +136,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     // ---- Settings and notifications ----
 
     public SettingsViewModel Settings { get; }
+    public AppUpdate Update => AppUpdate.Current;
     [ObservableProperty] public partial bool ShowSettings { get; set; }
     readonly FailureWatch _failures = new();
 

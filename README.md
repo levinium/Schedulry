@@ -7,7 +7,7 @@ pressing Refresh, and it says what each task does in plain words.
 ![Schedulry, light theme](docs/screenshots/main-light.png)
 
 **Status: early development.** Browsing, live status, run history, editing, creating and importing tasks, stars and groups, Run, End and Delete work
-today, on this computer or another one on the network, with a notification when a task fails. Installers are on the way.
+today, on this computer or another one on the network, with a notification when a task fails.
 
 ## What it does differently
 
@@ -36,7 +36,18 @@ today, on this computer or another one on the network, with a notification when 
 
 ![Schedulry, switching computers](docs/screenshots/computers-light.png)
 
-## Running it
+## Installing
+
+Download `Schedulry-win-x64-Setup.exe` (or `win-arm64` for Arm PCs) from the
+[latest release](https://github.com/levinium/Schedulry/releases). It installs for you alone,
+without administrator rights, and updates itself: a newer release downloads in the background
+and installs when Schedulry restarts. Builds are not signed yet, so Windows SmartScreen warns
+before the first run (**More info**, then **Run anyway**).
+
+Your settings, stars, groups and saved computers are kept in `%APPDATA%\Schedulry`, and stay
+there if you uninstall.
+
+## Running it from source
 
 Requires Windows 10 or 11 and the .NET 10 SDK.
 

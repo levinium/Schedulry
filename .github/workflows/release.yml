@@ -1,0 +1,92 @@
+name: Packages
+
+# Windows installers, made with Velopack (vpk, pinned in .config/dotnet-tools.json).
+# - A push to main builds them as downloadable workflow artifacts (kept 14 days), no release.
+# - A version tag (v0.2.0) also publishes a GitHub pre-release with them; installed copies update
+#   themselves from it. Pre-release while builds are unsigned (SmartScreen warns).
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  REPO_URL: https://github.com/${{ github.repository }}
+
+jobs:
+  # Tags only: the release the packages are added to. Made once, before the package jobs, so
+  # they don't race to create it.
+  release:
+    name: Create the release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --prerelease --title "Schedulry ${GITHUB_REF_NAME#v}" --notes \
+            "Unsigned pre-release: Windows SmartScreen will warn before the first run (More info, then Run anyway). Download Schedulry-win-x64-Setup.exe (or win-arm64 for Arm PCs). It installs for you alone, without administrator rights, and updates itself."
+
+  package:
+    name: Package ${{ matrix.rid }}
+    needs: release
+    # Runs on pushes too, when the release job is skipped.
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [win-x64, win-arm64]
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore vpk
+        run: dotnet tool restore
+
+      # The tag's number for a release; otherwise the project's version marked as a CI build.
+      - name: Version
+        id: version
+        run: |
+          if ("$env:GITHUB_REF" -like 'refs/tags/v*') { $v = "$env:GITHUB_REF_NAME".Substring(1) }
+          else {
+            $base = ([xml](Get-Content src/Schedulry.App/Schedulry.App.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+            $v = "$base-ci.$env:GITHUB_RUN_NUMBER"
+          }
+          "value=$v" >> $env:GITHUB_OUTPUT
+          "Version $v"
+
+      - name: Publish
+        run: dotnet publish src/Schedulry.App/Schedulry.App.csproj -c Release -r ${{ matrix.rid }} --self-contained -o publish -p:Version=${{ steps.version.outputs.value }} -p:DebugType=none
+
+      # The previous release, so this one can include a small update (delta) from it.
+      - name: Previous release
+        if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        run: dotnet vpk download github --repoUrl $env:REPO_URL --channel ${{ matrix.rid }} --pre --token ${{ github.token }} -o releases
+
+      - name: Pack
+        run: |
+          dotnet vpk pack --packId Schedulry --packVersion ${{ steps.version.outputs.value }} --packDir publish --mainExe Schedulry.exe `
+            --packTitle Schedulry --packAuthors levinium --icon src/Schedulry.App/Assets/schedulry.ico --channel ${{ matrix.rid }} --runtime ${{ matrix.rid }} -o releases
+          if ($LASTEXITCODE -ne 0) { throw "vpk pack failed" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schedulry-${{ steps.version.outputs.value }}-${{ matrix.rid }}
+          path: releases/*
+          retention-days: 14
+
+      - name: Add to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: dotnet vpk upload github --repoUrl $env:REPO_URL --channel ${{ matrix.rid }} --tag $env:GITHUB_REF_NAME --merge --pre --publish --token ${{ github.token }} -o releases

@@ -191,6 +191,7 @@
           <Border Classes="banner error" IsVisible="{Binding HasProblem}">
             <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
           </Border>
+          <TextBlock Classes="muted" FontSize="12" Text="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).Update.VersionText}" />
         </StackPanel>
       </Border>
       <Border Classes="card" Padding="16,12" IsVisible="{Binding IsImporting}">
@@ -219,6 +220,14 @@
             <Button Classes="neutral" Content="Cancel" Command="{Binding CancelCommand}" />
           </StackPanel>
         </StackPanel>
+      </Border>
+      <!-- A newer version has downloaded. -->
+      <Border Classes="banner info" IsVisible="{Binding Update.IsReady}">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <ic:FluentIcon Icon="ArrowDownload" FontSize="18" VerticalAlignment="Center" Foreground="{DynamicResource Accent}" />
+          <TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding Update.ReadyText}" />
+          <Button Grid.Column="2" Classes="primary" Content="Restart to Update" Command="{Binding Update.RestartCommand}" />
+        </Grid>
       </Border>
       <Border Classes="banner error" IsVisible="{Binding HasLiveProblem}">
         <TextBlock Text="{Binding LiveProblem}" TextWrapping="Wrap" />

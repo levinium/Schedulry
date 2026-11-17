@@ -25,6 +25,7 @@
     <PackageReference Include="Avalonia.Controls.DataGrid" />
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" />
     <PackageReference Include="System.Drawing.Common" />
+    <PackageReference Include="Velopack" />
   </ItemGroup>
 
   <ItemGroup>
