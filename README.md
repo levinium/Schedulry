@@ -1,13 +1,38 @@
+<img src="src/Schedulry.App/Assets/schedulry-256.png" width="72" alt="">
+
 # Schedulry
 
 A friendlier window onto Windows Task Scheduler. It shows every scheduled task on the computer
 in one searchable list that updates by itself, so you see a task start, finish or fail without
 pressing Refresh, and it says what each task does in plain words.
 
+[![Latest release](https://img.shields.io/github/v/release/levinium/Schedulry?include_prereleases&label=download&color=3B5BDB)](https://github.com/levinium/Schedulry/releases)
+[![Downloads](https://img.shields.io/github/downloads/levinium/Schedulry/total?color=3B5BDB)](https://github.com/levinium/Schedulry/releases)
+![Platform](https://img.shields.io/badge/platform-Windows%20x64%20%7C%20Arm64-555)
+[![Sponsor](https://img.shields.io/badge/sponsor-%E2%99%A5-3B5BDB)](https://github.com/sponsors/levinium)
+
 ![Schedulry, light theme](docs/screenshots/main-light.png)
 
 **Status: early development.** Browsing, live status, run history, editing, creating and importing tasks, stars and groups, Run, End and Delete work
 today, on this computer or another one on the network, with a notification when a task fails.
+
+## Download
+
+**[Download Schedulry-win-x64-Setup.exe](https://github.com/levinium/Schedulry/releases/download/v0.1.0/Schedulry-win-x64-Setup.exe)** (71 MB)
+
+On an Arm PC, get **[Schedulry-win-arm64-Setup.exe](https://github.com/levinium/Schedulry/releases/download/v0.1.0/Schedulry-win-arm64-Setup.exe)** (67 MB)
+instead. To run it without installing, there is a portable zip for each beside them on the
+[releases page](https://github.com/levinium/Schedulry/releases).
+
+It installs for you alone, without administrator rights, and adds itself to the Start menu. It
+updates itself: a newer release downloads in the background and installs when Schedulry
+restarts. You need Windows 10 or 11.
+
+Builds are not code-signed yet, so Windows SmartScreen warns before the first run. Choose
+**More info**, then **Run anyway**, or read the source and build it yourself.
+
+Your settings, stars, groups and saved computers are kept in `%APPDATA%\Schedulry`, and stay
+there if you uninstall.
 
 ## What it does differently
 
@@ -35,17 +60,6 @@ today, on this computer or another one on the network, with a notification when 
 ![Schedulry, the task editor](docs/screenshots/editor-light.png)
 
 ![Schedulry, switching computers](docs/screenshots/computers-light.png)
-
-## Installing
-
-Download `Schedulry-win-x64-Setup.exe` (or `win-arm64` for Arm PCs) from the
-[latest release](https://github.com/levinium/Schedulry/releases). It installs for you alone,
-without administrator rights, and updates itself: a newer release downloads in the background
-and installs when Schedulry restarts. Builds are not signed yet, so Windows SmartScreen warns
-before the first run (**More info**, then **Run anyway**).
-
-Your settings, stars, groups and saved computers are kept in `%APPDATA%\Schedulry`, and stay
-there if you uninstall.
 
 ## Running it from source
 
