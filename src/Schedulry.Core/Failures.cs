@@ -91,6 +91,16 @@ public interface IRemoteAccess
 
     /// <summary>False when the person declined the administrator prompt.</summary>
     Task<bool> SetAsync(bool on);
+
+    /// <summary>
+    /// This PC's own administrator accounts (.\name) keep their administrator rights when they sign
+    /// in from another computer. Windows strips them by default (UAC remote restrictions); domain
+    /// accounts aren't affected. Weaker security, so it's a separate choice.
+    /// </summary>
+    bool LocalAdminsOn { get; }
+
+    /// <summary>False when the person declined the administrator prompt.</summary>
+    Task<bool> SetLocalAdminsAsync(bool on);
 }
 
 public interface ISettingsStore

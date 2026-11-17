@@ -26,7 +26,7 @@ instead. To run it without installing, there is a portable zip for each beside t
 
 It installs for you alone, without administrator rights, and adds itself to the Start menu. It
 updates itself: a newer release downloads in the background and installs when Schedulry
-restarts. You need Windows 10 or 11.
+restarts, and **Check for Updates** in Settings looks straight away. You need Windows 10 or 11.
 
 Builds are not code-signed yet, so Windows SmartScreen warns before the first run. Choose
 **More info**, then **Run anyway**, or read the source and build it yourself.
@@ -93,7 +93,13 @@ administrator PowerShell:
 Enable-NetFirewallRule -DisplayGroup 'Remote Scheduled Tasks Management','Remote Event Log Management'
 ```
 
-Connecting still takes an administrator account on that computer.
+Connecting still takes an administrator account on that computer. A domain account that is an
+administrator there works as it is. A local account (`.\Admin`) is refused with "Access is
+denied", because Windows removes a local account's administrator rights when it signs in over
+the network (UAC remote restrictions). **Also let this PC's own administrator accounts connect**,
+under the same setting, lifts that by setting `LocalAccountTokenFilterPolicy`. It's weaker
+security, since a stolen local password then reaches further, so turn it on only if you need
+it.
 
 ## How the live view works
 

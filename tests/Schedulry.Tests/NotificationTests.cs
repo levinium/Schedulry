@@ -176,6 +176,88 @@ public class NotificationTests
                 IsOn = on;
             return System.Threading.Tasks.Task.FromResult(Answer);
         }
+
+        public bool LocalAdminsOn { get; set; }
+
+        public System.Threading.Tasks.Task<bool> SetLocalAdminsAsync(bool on)
+        {
+            Calls++;
+            if (Fail is not null)
+                throw Fail;
+            if (Answer)
+                LocalAdminsOn = on;
+            return System.Threading.Tasks.Task.FromResult(Answer);
+        }
+    }
+
+    [Fact]
+    public void Check_for_updates_is_only_offered_by_installed_copies()
+    {
+        var update = new AppUpdate();
+        Assert.False(update.CanCheck);
+        Assert.False(update.CheckNowCommand.CanExecute(null));
+        update.AllowChecks(() => System.Threading.Tasks.Task.FromResult("You have the latest version (0.1.1)."));
+        Assert.True(update.CanCheck);
+        Assert.True(update.CheckNowCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Check_for_updates_says_what_it_found()
+    {
+        var update = new AppUpdate();
+        var answer = new System.Threading.Tasks.TaskCompletionSource<string>();
+        update.AllowChecks(() => answer.Task);
+        var running = update.CheckNowCommand.ExecuteAsync(null);
+        Assert.True(update.IsChecking);
+        Assert.False(update.CheckNowCommand.CanExecute(null));   // no second check meanwhile
+        Assert.Equal("Looking for a newer version…", update.CheckText);
+        answer.SetResult("You have the latest version (0.1.1).");
+        await running;
+        Assert.False(update.IsChecking);
+        Assert.Equal("You have the latest version (0.1.1).", update.CheckText);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Check_for_updates_explains_a_failure()
+    {
+        var update = new AppUpdate();
+        update.AllowChecks(() => throw new HttpRequestException("No such host is known."));
+        await update.CheckNowCommand.ExecuteAsync(null);
+        Assert.Equal("Couldn't check for updates: No such host is known.", update.CheckText);
+        Assert.True(update.CheckNowCommand.CanExecute(null));   // can try again
+    }
+
+    [Fact]
+    public void Nothing_to_check_once_an_update_is_ready()
+    {
+        var update = new AppUpdate();
+        update.AllowChecks(() => System.Threading.Tasks.Task.FromResult(""));
+        update.Ready("0.1.2", () => { });
+        Assert.False(update.CheckNowCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Allowing_local_administrators_is_its_own_choice()
+    {
+        var remote = new FakeRemoteAccess();
+        var settings = new SettingsViewModel(new MemorySettingsStore(), remote: remote);
+        settings.AllowLocalAdmins = true;
+        await settings.RemoteChange;
+        Assert.True(remote.LocalAdminsOn);
+        Assert.False(remote.IsOn);   // the firewall is left alone
+        Assert.True(settings.AllowLocalAdmins);
+        Assert.False(settings.AllowRemote);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Declining_the_prompt_for_local_administrators_leaves_it_off()
+    {
+        var remote = new FakeRemoteAccess { Answer = false };
+        var settings = new SettingsViewModel(new MemorySettingsStore(), remote: remote);
+        settings.AllowLocalAdmins = true;
+        await settings.RemoteChange;
+        Assert.False(settings.AllowLocalAdmins);
+        Assert.Null(settings.Problem);
     }
 
     [Fact]

@@ -310,6 +310,25 @@ public class ComputerTests
         Assert.Contains("Enable-NetFirewallRule", text);
     }
 
+    [Theory]
+    [InlineData(@".\Admin", true)]
+    [InlineData(@"SERVER01\Admin", true)]
+    [InlineData(@"server01\Admin", true)]
+    [InlineData("Admin", true)]
+    [InlineData(@"CONTOSO\ops.admin", false)]
+    [InlineData("ops.admin@contoso.com", false)]
+    [InlineData(null, false)]
+    public void Local_accounts_are_told_apart_from_domain_ones(string? account, bool local) =>
+        Assert.Equal(local, WindowsSchedulerHost.IsLocalAccount(account, "SERVER01.contoso.com"));
+
+    [Fact]
+    public void A_refused_local_account_explains_remote_restrictions()
+    {
+        var text = WindowsSchedulerHost.Describe(new UnauthorizedAccessException(), "SERVER01", @".\Admin");
+        Assert.StartsWith(@"SERVER01 refused .\Admin. If that account is an administrator there", text);
+        Assert.Contains("turn on \"Also let this PC's own administrator accounts connect\"", text);
+    }
+
     [Fact]
     public void Access_denied_names_the_account_used()
     {

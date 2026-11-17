@@ -42,6 +42,23 @@ public sealed partial class WindowsSchedulerHost
         }
     }
 
+    /// <summary>
+    /// An account of the other computer itself: ".\name", "COMPUTER\name" (its short name), or a bare
+    /// name, which Windows looks up there first. Not "DOMAIN\name" or "name@domain".
+    /// </summary>
+    public static bool IsLocalAccount(string? account, string computer)
+    {
+        account = account?.Trim();
+        if (string.IsNullOrEmpty(account) || account.Contains('@'))
+            return false;
+        var slash = account.IndexOf('\\');
+        if (slash < 0)
+            return true;
+        var domain = account[..slash];
+        var shortName = computer.Split('.')[0];
+        return domain == "." || domain.Equals(shortName, StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>Why another computer couldn't be opened, in words someone can act on.</summary>
     public static string Describe(Exception e, string computer, string? account)
     {
@@ -49,6 +66,11 @@ public sealed partial class WindowsSchedulerHost
         var code = e is UnauthorizedAccessException ? AccessDenied : e.HResult;
         return code switch
         {
+            AccessDenied when IsLocalAccount(account, computer) =>
+                $"{computer} refused {who}. If that account is an administrator there and the password is right (a wrong one gives this same message), " +
+                $"Windows on {computer} is removing administrator rights from its own accounts when they sign in over the network. " +
+                $"Connect with a domain account that's an administrator on {computer}, or allow its local administrators: open Schedulry on {computer}, " +
+                $"go to Settings and turn on \"Also let this PC's own administrator accounts connect\".",
             AccessDenied =>
                 $"{computer} refused {who}. Managing another computer's tasks takes an administrator account on that computer. Try connecting as another account.",
             LogonFailure => $"{computer} didn't accept that account name and password.",

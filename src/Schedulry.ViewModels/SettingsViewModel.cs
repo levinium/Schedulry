@@ -26,11 +26,15 @@ public sealed partial class SettingsViewModel : ObservableObject
         KeepRunningWhenClosed = _settings.KeepRunningWhenClosed;
         StartWithWindows = _startup.IsOn;
         AllowRemote = _remote.IsOn;
+        AllowLocalAdmins = _remote.LocalAdminsOn;
         _loading = false;
     }
 
     /// <summary>Other computers may manage this PC's tasks (the firewall lets them in).</summary>
     [ObservableProperty] public partial bool AllowRemote { get; set; }
+
+    /// <summary>This PC's own administrator accounts keep their rights when signing in from another computer.</summary>
+    [ObservableProperty] public partial bool AllowLocalAdmins { get; set; }
 
     /// <summary>Waiting on the administrator prompt: the switch can't be flipped again meanwhile.</summary>
     [ObservableProperty] public partial bool RemoteBusy { get; private set; }
@@ -48,6 +52,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             return;
         _loading = true;
         AllowRemote = _remote.IsOn;
+        AllowLocalAdmins = _remote.LocalAdminsOn;
         StartWithWindows = _startup.IsOn;
         _loading = false;
     }
@@ -56,27 +61,35 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         if (_loading)
             return;
-        RemoteChange = ChangeRemoteAsync(value);
+        RemoteChange = ChangeRemoteAsync(() => _remote.SetAsync(value), "whether other computers can manage this one");
     }
 
-    async Task ChangeRemoteAsync(bool on)
+    partial void OnAllowLocalAdminsChanged(bool value)
+    {
+        if (_loading)
+            return;
+        RemoteChange = ChangeRemoteAsync(() => _remote.SetLocalAdminsAsync(value), "whether this PC's own administrator accounts can connect");
+    }
+
+    async Task ChangeRemoteAsync(Func<Task<bool>> change, string what)
     {
         RemoteBusy = true;
         try
         {
             // False means No at the administrator prompt: nothing changed and nothing to explain.
-            await _remote.SetAsync(on);
+            await change();
             Problem = null;
         }
         catch (Exception e)
         {
-            Problem = $"Couldn't change whether other computers can manage this one: {e.Message}";
+            Problem = $"Couldn't change {what}: {e.Message}";
         }
         finally
         {
-            // The switch shows what Windows really has.
+            // The switches show what Windows really has.
             _loading = true;
             AllowRemote = _remote.IsOn;
+            AllowLocalAdmins = _remote.LocalAdminsOn;
             _loading = false;
             RemoteBusy = false;
         }
@@ -85,9 +98,17 @@ public sealed partial class SettingsViewModel : ObservableObject
     sealed class NoRemoteAccess : IRemoteAccess
     {
         public bool IsOn { get; private set; }
+        public bool LocalAdminsOn { get; private set; }
+
         public Task<bool> SetAsync(bool on)
         {
             IsOn = on;
+            return Task.FromResult(true);
+        }
+
+        public Task<bool> SetLocalAdminsAsync(bool on)
+        {
+            LocalAdminsOn = on;
             return Task.FromResult(true);
         }
     }

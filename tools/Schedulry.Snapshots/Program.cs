@@ -92,6 +92,10 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
     {
         vm.SelectedRow = vm.Rows.First(r => r.Name == "Sync payroll exports");
         vm.ShowSettings = true;
+        // As an installed copy shows it, after Check for Updates found nothing newer.
+        AppUpdate.Current.VersionText = "Version 0.1.1. Updates download by themselves from GitHub.";
+        AppUpdate.Current.AllowChecks(() => Task.FromResult("You have the latest version (0.1.1)."));
+        AppUpdate.Current.CheckNowCommand.Execute(null);
     });
 
     // Looking at another computer.
