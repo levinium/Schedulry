@@ -170,8 +170,10 @@ public sealed partial class WindowsSchedulerHost : ISchedulerHost
                     using var config = new EventLogConfiguration(HistoryLog, session);
                     _historyEnabled = config.IsEnabled;
                 }
-                catch (Exception e) when (e is EventLogException or UnauthorizedAccessException)
+                catch (Exception e) when (e is EventLogException or UnauthorizedAccessException or InvalidOperationException
+                                               or System.Runtime.InteropServices.COMException or IOException)
                 {
+                    // Can't be read (on another computer, often its firewall): treated as off.
                     _historyEnabled = false;
                 }
                 UpdateWatcher();
@@ -234,7 +236,8 @@ public sealed partial class WindowsSchedulerHost : ISchedulerHost
                 {
                     _watcher.Enabled = true;
                 }
-                catch (Exception ex) when (ex is EventLogException or UnauthorizedAccessException)
+                catch (Exception ex) when (ex is EventLogException or UnauthorizedAccessException or InvalidOperationException
+                                                or System.Runtime.InteropServices.COMException or IOException)
                 {
                     _watcher.Dispose();
                     _watcher = null;

@@ -145,7 +145,7 @@
           <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
                      Text="You need to be an administrator on the other computer, and its firewall must allow remote task management. Computers you connect to are remembered with the account. A password is kept only if you tick Remember: Windows Credential Manager holds it, encrypted with your Windows sign-in, on this PC only." />
           <Border Classes="banner error" IsVisible="{Binding HasProblem}">
-            <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
+            <c:ErrorText Text="{Binding Problem}" />
           </Border>
           <Border Classes="banner info" IsVisible="{Binding HasNote}">
             <TextBlock Text="{Binding Note}" TextWrapping="Wrap" />
@@ -203,7 +203,7 @@
             </StackPanel>
           </WrapPanel>
           <Border Classes="banner error" IsVisible="{Binding HasProblem}">
-            <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
+            <c:ErrorText Text="{Binding Problem}" />
           </Border>
           <StackPanel Orientation="Horizontal" Spacing="12"
                       DataContext="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).Update}" x:DataType="vm:AppUpdate">
@@ -232,7 +232,7 @@
             </StackPanel>
           </WrapPanel>
           <Border Classes="banner error" IsVisible="{Binding HasProblem}">
-            <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
+            <c:ErrorText Text="{Binding Problem}" />
           </Border>
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Classes="primary" Content="Import Task" Command="{Binding ImportCommand}" />
@@ -249,10 +249,10 @@
         </Grid>
       </Border>
       <Border Classes="banner error" IsVisible="{Binding HasLiveProblem}">
-        <TextBlock Text="{Binding LiveProblem}" TextWrapping="Wrap" />
+        <c:ErrorText Text="{Binding LiveProblem}" />
       </Border>
       <Border Classes="banner error" IsVisible="{Binding HasBannerProblem}">
-        <TextBlock Text="{Binding BannerProblem}" TextWrapping="Wrap" />
+        <c:ErrorText Text="{Binding BannerProblem}" />
       </Border>
       <Border Classes="banner" IsVisible="{Binding ShowAdminBanner}">
         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
@@ -614,7 +614,7 @@
                       </StackPanel>
                     </Border>
                     <Border Classes="banner error" IsVisible="{Binding HasProblem}" Margin="0,10,0,0">
-                      <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
+                      <c:ErrorText Text="{Binding Problem}" />
                     </Border>
 
                     <Border Classes="detailSection" Margin="0,16,0,0">

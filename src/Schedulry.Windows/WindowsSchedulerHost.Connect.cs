@@ -32,14 +32,16 @@ public sealed partial class WindowsSchedulerHost
         {
             using var root = host.Service.RootFolder;
             _ = root.GetTasks().Count;
-            _ = host.HistoryEnabled;   // starts the log watcher when the history log can be read
-            return host;
         }
         catch (Exception e)
         {
             host.Dispose();
             throw new InvalidOperationException(Describe(e, name!, request.Account), e);
         }
+        // The run history comes through the event log, a separate door in the other computer's
+        // firewall. When it's closed the tasks still show, without their history.
+        _ = host.HistoryEnabled;   // starts the log watcher when the history log can be read
+        return host;
     }
 
     /// <summary>
@@ -64,7 +66,12 @@ public sealed partial class WindowsSchedulerHost
     {
         var who = string.IsNullOrWhiteSpace(account) ? "your account" : account.Trim();
         var code = e is UnauthorizedAccessException ? AccessDenied : e.HResult;
-        return code switch
+        // The code too, so a copied message says exactly what Windows answered.
+        return $"{Words(e, code, computer, account, who)} (0x{code:X8})";
+    }
+
+    static string Words(Exception e, int code, string computer, string? account, string who) =>
+        code switch
         {
             AccessDenied when IsLocalAccount(account, computer) =>
                 $"{computer} refused {who}. If that account is an administrator there and the password is right (a wrong one gives this same message), " +
@@ -80,9 +87,8 @@ public sealed partial class WindowsSchedulerHost
             RpcUnavailable or RpcCallFailed or Timeout =>
                 $"{computer} didn't answer. It may be switched off, or its firewall may block remote task management (the Windows Firewall rule group \"Remote Scheduled Tasks Management\").",
             NotSupported =>
-                $"{computer} doesn't allow remote task management yet. To allow it, open Schedulry on {computer}, go to Settings and turn on \"Let other computers manage this PC's tasks\". Without Schedulry there, run this in an administrator PowerShell on {computer}:Enable-NetFirewallRule -DisplayGroup 'Remote Scheduled Tasks Management','Remote Event Log Management'",
+                $"{computer} doesn't allow remote task management yet. To allow it, open Schedulry on {computer}, go to Settings and turn on \"Let other computers manage this PC's tasks\". Without Schedulry there, run this in an administrator PowerShell on {computer}: Enable-NetFirewallRule -DisplayGroup 'Remote Scheduled Tasks Management','Remote Event Log Management'",
             _ when e is EventLogException => $"Couldn't read {computer}'s event log: {e.Message}",
             _ => $"Couldn't connect to {computer}: {e.Message}",
         };
-    }
 }

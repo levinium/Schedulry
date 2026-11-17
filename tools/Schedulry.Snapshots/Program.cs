@@ -77,6 +77,15 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         vm.Editor!.Tab = Schedulry.ViewModels.Editor.ReviewTab.PowerShell;
     });
 
+    // A computer that can't be reached: the message can be selected and copied.
+    Render($"connect-error-{suffix}", new DemoSchedulerHost(() => moment), vm =>
+    {
+        vm.SelectedRow = vm.Rows.First(r => r.Name == "Sync payroll exports");
+        vm.ShowComputers = true;
+        vm.Computers.Name = "OFFLINE-PC";
+        vm.Computers.ConnectCommand.Execute(null);
+    });
+
     // Switching computers: the card, with another account being filled in.
     Render($"computers-{suffix}", new DemoSchedulerHost(() => moment), vm =>
     {

@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Schedulry.App.Controls"
              xmlns:ed="using:Schedulry.ViewModels.Editor"
              xmlns:ic="using:FluentIcons.Avalonia"
              x:Class="Schedulry.App.Views.EditorView"
@@ -304,7 +305,7 @@
           <ScrollViewer Grid.Row="1" IsVisible="{Binding ShowChangesTab}">
             <StackPanel Spacing="10">
               <Border Classes="banner error" IsVisible="{Binding HasSaveProblem}">
-                <TextBlock Text="{Binding SaveProblem}" TextWrapping="Wrap" />
+                <c:ErrorText Text="{Binding SaveProblem}" />
               </Border>
               <Border Classes="banner info" IsVisible="{Binding RightsNote, Converter={x:Static ObjectConverters.IsNotNull}}">
                 <TextBlock Text="{Binding RightsNote}" TextWrapping="Wrap" />
