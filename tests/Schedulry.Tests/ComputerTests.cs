@@ -321,6 +321,15 @@ public class ComputerTests
     public void Local_accounts_are_told_apart_from_domain_ones(string? account, bool local) =>
         Assert.Equal(local, WindowsSchedulerHost.IsLocalAccount(account, "SERVER01.contoso.com"));
 
+    [Theory]
+    [InlineData(@".\Admin", "SERVER01", "SERVER01", "Admin")]
+    [InlineData(@".\Admin", "server01.contoso.com", "server01", "Admin")]
+    [InlineData(@".\Admin", "10.0.0.5", ".", "Admin")]          // no name to use: left as it is
+    [InlineData(@"CONTOSO\ops.admin", "SERVER01", "CONTOSO", "ops.admin")]
+    [InlineData("ops.admin@contoso.com", "SERVER01", null, "ops.admin@contoso.com")]
+    public void A_dot_account_signs_in_to_the_computer_being_opened(string account, string computer, string? domain, string user) =>
+        Assert.Equal((domain, user), WindowsSchedulerHost.SplitAccount(account, computer));
+
     [Fact]
     public void A_refused_local_account_explains_remote_restrictions()
     {

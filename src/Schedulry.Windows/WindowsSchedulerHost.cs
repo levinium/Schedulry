@@ -34,7 +34,7 @@ public sealed partial class WindowsSchedulerHost : ISchedulerHost
     public WindowsSchedulerHost(string? computer = null, string? account = null, string? password = null)
     {
         _computer = ComputerNames.Normalise(computer);
-        (_domain, _user) = SplitAccount(account);
+        (_domain, _user) = SplitAccount(account, _computer);
         _password = _user is null ? null : password;
         _service = new ThreadLocal<TaskService>(() => new TaskService(_computer, _user, _domain, _password), trackAllValues: true);
         using var identity = WindowsIdentity.GetCurrent();
@@ -51,14 +51,24 @@ public sealed partial class WindowsSchedulerHost : ISchedulerHost
     public bool IsRemote { get; }
     public string CurrentUser { get; }
 
-    static (string? Domain, string? User) SplitAccount(string? account)
+    /// <summary>
+    /// DOMAIN\user into its parts. ".\user" means an account of the computer being opened, so "."
+    /// becomes that computer's name: sent as it is, Windows can take "." for this computer and
+    /// sign in as an account of the wrong one.
+    /// </summary>
+    public static (string? Domain, string? User) SplitAccount(string? account, string? computer)
     {
         account = account?.Trim();
         if (string.IsNullOrEmpty(account))
             return (null, null);
         var slash = account.IndexOf('\\');
         // user@domain goes through whole: Windows understands it.
-        return slash > 0 ? (account[..slash], account[(slash + 1)..]) : (null, account);
+        if (slash <= 0)
+            return (null, account);
+        var domain = account[..slash];
+        if (domain == "." && !string.IsNullOrEmpty(computer) && !System.Net.IPAddress.TryParse(computer, out _))
+            domain = computer.Split('.')[0];
+        return (domain, account[(slash + 1)..]);
     }
 
     public event Action<string>? TaskEvent;
