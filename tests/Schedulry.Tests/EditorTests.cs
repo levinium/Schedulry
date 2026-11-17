@@ -36,6 +36,40 @@ public class EditorTests
     }
 
     [Fact]
+    public void The_folder_is_picked_from_a_list_or_made_inside_one()
+    {
+        using var vm = Open();
+        vm.NewTaskCommand.Execute(null);
+        var editor = vm.Editor!;
+        var picker = editor.FolderPicker;
+        Assert.Equal("\\", editor.Folder);
+        Assert.Equal("Top level", picker.Selected.Label);
+        Assert.Contains(picker.Choices, c => c.Path == @"\Maintenance" && c.Title == "Maintenance" && c.Depth == 1);
+
+        picker.Selected = picker.Choices.Single(c => c.Path == @"\Maintenance");
+        Assert.Equal(@"\Maintenance", editor.Folder);
+
+        // A new folder inside the chosen one; Cancel goes back to the chosen one.
+        picker.StartNewFolderCommand.Execute(null);
+        picker.NewName = @" Nightly\ ";
+        Assert.Equal(@"\Maintenance\Nightly", editor.Folder);
+        Assert.Contains(@"\Maintenance", picker.NewFolderNote);
+        picker.CancelNewFolderCommand.Execute(null);
+        Assert.Equal(@"\Maintenance", editor.Folder);
+
+        // A path set elsewhere (a copied task's, say) that doesn't exist: deepest existing parent, rest is new.
+        editor.Folder = @"\Maintenance\A\B";
+        Assert.Equal(@"\Maintenance", picker.Selected.Path);
+        Assert.True(picker.IsCreating);
+        Assert.Equal(@"A\B", picker.NewName);
+        Assert.Equal(@"\Maintenance\A\B", editor.Folder);
+
+        editor.Folder = "reports";
+        Assert.False(picker.IsCreating);
+        Assert.Equal(@"\Reports", picker.Selected.Path);
+    }
+
+    [Fact]
     public void Edits_are_listed_in_words_and_saved()
     {
         using var vm = Open();

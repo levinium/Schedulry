@@ -57,7 +57,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject
         if (copy)
             draft = draft with { Name = original!.Name + " (copy)" };
 
-        Folders = shell.Host.Folders();
+        FolderPicker = new FolderPicker(shell.Host.Folders(), draft.Folder);
+        FolderPicker.Changed += () => Folder = FolderPicker.Path;
         Name = draft.Name;
         Folder = draft.Folder;
         Description = draft.Description ?? "";
@@ -111,7 +112,8 @@ public sealed partial class TaskEditorViewModel : ObservableObject
 
     public string Title { get; }
     public bool IsNew { get; }
-    public IReadOnlyList<string> Folders { get; }
+    /// <summary>The folder: picked from the computer's folders, or a new one inside one of them.</summary>
+    public FolderPicker FolderPicker { get; }
     public IReadOnlyList<LogonChoice> LogonChoices { get; }
     public ObservableCollection<TriggerEditor> Triggers { get; } = [];
     public bool NoTriggers => Triggers.Count == 0;
@@ -119,6 +121,7 @@ public sealed partial class TaskEditorViewModel : ObservableObject
 
     [ObservableProperty] public partial string Name { get; set; }
     [ObservableProperty] public partial string Folder { get; set; }
+    partial void OnFolderChanged(string value) => FolderPicker.Set(value);
     [ObservableProperty] public partial string Description { get; set; }
     [ObservableProperty] public partial bool Enabled { get; set; }
     [ObservableProperty] public partial string RunAs { get; set; }

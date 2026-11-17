@@ -60,15 +60,22 @@ public sealed partial class ComputersViewModel : ObservableObject
         : UseOtherAccount && Password.Length == 0 ? "Type the account's password."
         : null;
 
+    /// <summary>
+    /// The reason under the form: none while the name is still empty (its box already says what
+    /// to type), so the panel doesn't open on a warning.
+    /// </summary>
+    public string? ConnectHint => string.IsNullOrWhiteSpace(Name) ? null : ConnectBlocked;
+
     partial void OnProblemChanged(string? value) => OnPropertyChanged(nameof(HasProblem));
     partial void OnNoteChanged(string? value) => OnPropertyChanged(nameof(HasNote));
     partial void OnIsConnectingChanged(bool value)
     {
         OnPropertyChanged(nameof(IsIdle));
         OnPropertyChanged(nameof(ConnectBlocked));
+        OnPropertyChanged(nameof(ConnectHint));
         ConnectToCommand.NotifyCanExecuteChanged();
     }
-    partial void OnNameChanged(string value) => OnPropertyChanged(nameof(ConnectBlocked));
+    partial void OnNameChanged(string value) => NotifyHint();
     partial void OnUseOtherAccountChanged(bool value)
     {
         if (!value)
@@ -77,9 +84,16 @@ public sealed partial class ComputersViewModel : ObservableObject
             RememberPassword = false;
         }
         OnPropertyChanged(nameof(ConnectBlocked));
+        OnPropertyChanged(nameof(ConnectHint));
     }
-    partial void OnAccountChanged(string value) => OnPropertyChanged(nameof(ConnectBlocked));
-    partial void OnPasswordChanged(string value) => OnPropertyChanged(nameof(ConnectBlocked));
+    partial void OnAccountChanged(string value) => NotifyHint();
+    partial void OnPasswordChanged(string value) => NotifyHint();
+
+    void NotifyHint()
+    {
+        OnPropertyChanged(nameof(ConnectBlocked));
+        OnPropertyChanged(nameof(ConnectHint));
+    }
 
     bool CanConnect() => !IsConnecting && ConnectBlocked is null;
 

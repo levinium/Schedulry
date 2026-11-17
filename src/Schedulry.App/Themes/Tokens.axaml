@@ -41,6 +41,8 @@
       <SolidColorBrush x:Key="CardBorder" Color="#D9DDE3" />
       <SolidColorBrush x:Key="Divider" Color="#E6E8EC" />
       <SolidColorBrush x:Key="SubtleBg" Color="#F6F7F9" />
+      <!-- Behind a drop-down panel: the page dims a little, so the panel stands out. -->
+      <SolidColorBrush x:Key="Scrim" Color="#1F2328" Opacity="0.12" />
 
       <SolidColorBrush x:Key="TextPrimary" Color="#1F2328" />
       <SolidColorBrush x:Key="TextSecondary" Color="#4E5763" />
@@ -114,6 +116,7 @@
       <SolidColorBrush x:Key="CardBorder" Color="#363940" />
       <SolidColorBrush x:Key="Divider" Color="#2E3137" />
       <SolidColorBrush x:Key="SubtleBg" Color="#1D1F23" />
+      <SolidColorBrush x:Key="Scrim" Color="#000000" Opacity="0.35" />
 
       <SolidColorBrush x:Key="TextPrimary" Color="#E8EAED" />
       <SolidColorBrush x:Key="TextSecondary" Color="#B4BBC4" />

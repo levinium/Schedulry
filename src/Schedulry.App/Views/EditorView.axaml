@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Schedulry.App.Controls"
+             xmlns:views="using:Schedulry.App.Views"
              xmlns:ed="using:Schedulry.ViewModels.Editor"
              xmlns:ic="using:FluentIcons.Avalonia"
              x:Class="Schedulry.App.Views.EditorView"
@@ -44,8 +45,7 @@
                 </StackPanel>
                 <StackPanel Grid.Column="1" Spacing="4">
                   <TextBlock Classes="fieldLabel" Text="Folder" />
-                  <AutoCompleteBox Text="{Binding Folder}" ItemsSource="{Binding Folders}" FilterMode="ContainsOrdinal" MinimumPrefixLength="0"
-                                   Watermark="\ for the top folder; a new name makes a folder" />
+                  <views:FolderPickerView DataContext="{Binding FolderPicker}" />
                 </StackPanel>
               </Grid>
               <TextBlock Classes="fieldLabel" Text="Description" />

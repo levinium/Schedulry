@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             xmlns:ed="using:Schedulry.ViewModels.Editor"
+             x:Class="Schedulry.App.Views.FolderPickerView"
+             x:DataType="ed:FolderPicker">
+  <!-- A task's folder: one of the computer's folders, shown as a tree, or a new one inside it. -->
+  <StackPanel Spacing="6">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+      <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding Selected}" HorizontalAlignment="Stretch"
+                AutomationProperties.Name="Folder">
+        <ComboBox.SelectionBoxItemTemplate>
+          <DataTemplate x:DataType="ed:FolderChoice">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <ic:FluentIcon Icon="Folder" FontSize="14" VerticalAlignment="Center" Foreground="{DynamicResource TextMuted}" />
+              <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </DataTemplate>
+        </ComboBox.SelectionBoxItemTemplate>
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="ed:FolderChoice">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <Border Width="{Binding Indent}" />
+              <ic:FluentIcon Icon="Folder" FontSize="14" VerticalAlignment="Center" Foreground="{DynamicResource TextMuted}" />
+              <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+            </StackPanel>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <Button Grid.Column="1" Classes="neutral" Command="{Binding StartNewFolderCommand}" IsVisible="{Binding !IsCreating}">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <ic:FluentIcon Icon="FolderAdd" FontSize="14" />
+          <TextBlock Text="New Folder" />
+        </StackPanel>
+      </Button>
+    </Grid>
+    <!-- A new folder: named here, made inside the folder above when the task is saved. -->
+    <StackPanel Spacing="4" IsVisible="{Binding IsCreating}">
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+        <ic:FluentIcon Icon="FolderAdd" FontSize="14" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="{DynamicResource TextMuted}" />
+        <TextBox Grid.Column="1" Text="{Binding NewName}" Watermark="New folder's name, such as Backups" />
+        <Button Grid.Column="2" Classes="neutral" Content="Cancel" Command="{Binding CancelNewFolderCommand}" />
+      </Grid>
+      <TextBlock Classes="muted" FontSize="12" Margin="32,0,0,0" Text="{Binding NewFolderNote}" TextWrapping="Wrap" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>

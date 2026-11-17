@@ -10,7 +10,7 @@
 
   <Grid RowDefinitions="Auto,Auto,*">
 
-    <!-- Top bar: name, computer, live state, search, scope and sort. -->
+    <!-- Top bar: name, computer, live state; new task, import, settings. Search and sort sit on the table. -->
     <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" Margin="16,12,16,10" ColumnSpacing="14">
       <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
         <Image Source="/Assets/schedulry-256.png" Width="30" Height="30" />
@@ -35,16 +35,6 @@
         </StackPanel>
       </Border>
 
-      <Grid Grid.Column="2" MaxWidth="460" HorizontalAlignment="Left" Margin="12,0,0,0">
-        <TextBox Classes="search" Text="{Binding SearchText}" Watermark="Search names, programs, accounts and descriptions"
-                 Padding="34,6,34,6" />
-        <ic:FluentIcon Icon="Search" FontSize="14" Margin="12,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"
-                       Foreground="{DynamicResource TextMuted}" IsHitTestVisible="False" />
-        <Button Classes="neutral small" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0" Padding="6,2"
-                Command="{Binding ClearSearchCommand}" IsVisible="{Binding SearchText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-          <ic:FluentIcon Icon="Dismiss" FontSize="12" />
-        </Button>
-      </Grid>
 
       <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
         <Button Classes="primary" Command="{Binding NewTaskCommand}" IsEnabled="{Binding IsBrowsing}">
@@ -54,21 +44,7 @@
           </StackPanel>
         </Button>
         <Button Classes="neutral" Content="Import…" Command="{Binding ImportTaskCommand}" IsEnabled="{Binding IsBrowsing}" />
-        <TextBlock Classes="secondary" Text="Sort by" VerticalAlignment="Center" />
-        <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort}" MinWidth="120">
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:SortOption">
-              <TextBlock Text="{Binding Title}" />
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
-        <Button Classes="neutral" Command="{Binding ToggleSortDirectionCommand}">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <ic:FluentIcon Icon="ArrowSort" FontSize="14" />
-            <TextBlock Text="{Binding SortDirectionText}" />
-          </StackPanel>
-        </Button>
-        <!-- Settings: the gear alone, so the search box keeps its room on a laptop screen. -->
+        <!-- Settings: the gear alone. -->
         <Button Classes="neutral" Padding="9,8" Command="{Binding ToggleSettingsCommand}" AutomationProperties.Name="Settings">
           <ic:FluentIcon Icon="Settings" FontSize="16" />
         </Button>
@@ -77,90 +53,6 @@
 
     <!-- Banners: admin rights, history log, a problem reading. -->
     <StackPanel Grid.Row="1" Margin="16,0,16,8" Spacing="8">
-      <!-- Computers: this one, ones used before, or another by name. -->
-      <Border Classes="card" Padding="16,12" IsVisible="{Binding ShowComputers}">
-        <StackPanel Spacing="10" DataContext="{Binding Computers}" x:DataType="vm:ComputersViewModel">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Classes="h2" Text="Computers" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="neutral small" Content="Close"
-                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).ToggleComputersCommand}" />
-          </Grid>
-          <ItemsControl ItemsSource="{Binding Rows}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel ItemSpacing="8" LineSpacing="8" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:ComputerRow">
-                <Border Classes="subCard" Width="270" Padding="12,8">
-                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                    <ic:FluentIcon Icon="Desktop" FontSize="18" VerticalAlignment="Center" IsVisible="{Binding IsThisComputer}"
-                                   Foreground="{DynamicResource TextMuted}" />
-                    <ic:FluentIcon Icon="Server" FontSize="18" VerticalAlignment="Center" IsVisible="{Binding !IsThisComputer}"
-                                   Foreground="{DynamicResource TextMuted}" />
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                      <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                      <Grid ColumnDefinitions="Auto,*">
-                        <ic:FluentIcon Icon="Key" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center" Foreground="{DynamicResource TextMuted}"
-                                       IsVisible="{Binding HasSavedPassword}" />
-                        <TextBlock Grid.Column="1" Classes="muted" FontSize="12" Text="{Binding Detail}" TextTrimming="CharacterEllipsis" />
-                      </Grid>
-                    </StackPanel>
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                      <c:Chip Kind="Success" Content="Showing" IsVisible="{Binding IsCurrent}" />
-                      <Button Classes="primary small" Content="Open" IsVisible="{Binding CanConnect}"
-                              Command="{Binding $parent[ItemsControl].((vm:ComputersViewModel)DataContext).ConnectToCommand}"
-                              CommandParameter="{Binding}" />
-                      <Button Classes="chipRemove" IsVisible="{Binding CanForget}"
-                              Command="{Binding $parent[ItemsControl].((vm:ComputersViewModel)DataContext).ForgetCommand}"
-                              CommandParameter="{Binding}">
-                        <ic:FluentIcon Icon="Dismiss" FontSize="10" />
-                      </Button>
-                    </StackPanel>
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-
-          <TextBlock Classes="fieldLabel" Text="Connect to Another Computer" Margin="0,4,0,0" />
-          <WrapPanel ItemSpacing="12" LineSpacing="8" IsEnabled="{Binding IsIdle}">
-            <StackPanel Spacing="4">
-              <TextBlock Classes="muted" FontSize="12" Text="Computer name or IP address" />
-              <TextBox Text="{Binding Name}" Watermark="SERVER01" Width="240" />
-            </StackPanel>
-            <CheckBox IsChecked="{Binding UseOtherAccount}" Content="As another account" VerticalAlignment="Bottom" Margin="0,0,0,4" />
-            <StackPanel Spacing="4" IsVisible="{Binding UseOtherAccount}">
-              <TextBlock Classes="muted" FontSize="12" Text="Account" />
-              <TextBox Text="{Binding Account}" Watermark="DOMAIN\name" Width="200" />
-            </StackPanel>
-            <StackPanel Spacing="4" IsVisible="{Binding UseOtherAccount}">
-              <TextBlock Classes="muted" FontSize="12" Text="Password" />
-              <TextBox Text="{Binding Password}" PasswordChar="•" Width="200" />
-            </StackPanel>
-            <CheckBox IsChecked="{Binding RememberPassword}" IsVisible="{Binding UseOtherAccount}" Content="Remember password on this PC"
-                      VerticalAlignment="Bottom" Margin="0,0,0,4" />
-          </WrapPanel>
-          <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
-                     Text="You need to be an administrator on the other computer, and its firewall must allow remote task management. Computers you connect to are remembered with the account. A password is kept only if you tick Remember: Windows Credential Manager holds it, encrypted with your Windows sign-in, on this PC only." />
-          <Border Classes="banner error" IsVisible="{Binding HasProblem}">
-            <c:ErrorText Text="{Binding Problem}" />
-          </Border>
-          <Border Classes="banner info" IsVisible="{Binding HasNote}">
-            <TextBlock Text="{Binding Note}" TextWrapping="Wrap" />
-          </Border>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button Classes="primary" Content="Connect" Command="{Binding ConnectCommand}" IsDefault="True" IsVisible="{Binding IsIdle}" />
-            <TextBlock Classes="muted" FontSize="12" VerticalAlignment="Center" Text="{Binding ConnectBlocked}" />
-            <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsConnecting}">
-              <ProgressBar IsIndeterminate="True" Width="120" VerticalAlignment="Center" />
-              <TextBlock VerticalAlignment="Center" Text="{Binding ConnectingText}" />
-              <Button Classes="neutral" Content="Stop" Command="{Binding CancelConnectCommand}" />
-            </StackPanel>
-          </StackPanel>
-        </StackPanel>
-      </Border>
       <!-- Settings: alerts, the notification area, starting with Windows. For the whole app, whichever computer is showing. -->
       <Border Classes="card" Padding="16,12" IsVisible="{Binding ShowSettings}">
         <StackPanel Spacing="10" DataContext="{Binding Settings}" x:DataType="vm:SettingsViewModel">
@@ -224,7 +116,7 @@
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Classes="fieldLabel" Text="Folder" />
-              <AutoCompleteBox Text="{Binding Folder}" ItemsSource="{Binding Folders}" FilterMode="ContainsOrdinal" MinimumPrefixLength="0" Width="280" />
+              <views:FolderPickerView DataContext="{Binding FolderPicker}" Width="400" HorizontalAlignment="Left" />
             </StackPanel>
             <StackPanel Spacing="4" IsVisible="{Binding NeedsPassword}">
               <TextBlock Classes="fieldLabel" Text="The account's password (not kept)" />
@@ -377,8 +269,44 @@
           </Grid>
           </Grid>
 
+          <!-- Search and sort, right above what they act on. Search finds tasks and runs alike. -->
+          <Grid Grid.Row="1" ColumnSpacing="12" Margin="12,0,12,10">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="4*" MaxWidth="440" />
+              <ColumnDefinition Width="*" MinWidth="0" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid>
+              <TextBox Name="SearchBox" Classes="search" Text="{Binding SearchText}" Watermark="Search tasks"
+                       Padding="34,6,34,6" />
+              <ic:FluentIcon Icon="Search" FontSize="14" Margin="12,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"
+                             Foreground="{DynamicResource TextMuted}" IsHitTestVisible="False" />
+              <Button Classes="neutral small" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0" Padding="6,2"
+                      AutomationProperties.Name="Clear search" Command="{Binding ClearSearchCommand}"
+                      IsVisible="{Binding SearchText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <ic:FluentIcon Icon="Dismiss" FontSize="12" />
+              </Button>
+            </Grid>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding ShowTaskList}">
+              <TextBlock Classes="secondary" Text="Sort by" VerticalAlignment="Center" />
+              <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort}" MinWidth="120">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SortOption">
+                    <TextBlock Text="{Binding Title}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <Button Classes="neutral" Command="{Binding ToggleSortDirectionCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <ic:FluentIcon Icon="ArrowSort" FontSize="14" />
+                  <TextBlock Text="{Binding SortDirectionText}" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Grid>
+
           <!-- The table: drag a column's edge to resize it (widths are remembered); sort with "Sort by". -->
-          <DataGrid Grid.Row="1" Grid.RowSpan="2" Name="TaskGrid" Classes="tasks" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" IsVisible="{Binding ShowTaskList}"
+          <DataGrid Grid.Row="2" Name="TaskGrid" Classes="tasks" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" IsVisible="{Binding ShowTaskList}"
                     AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended" CanUserResizeColumns="True"
                     CanUserReorderColumns="True" CanUserSortColumns="False" GridLinesVisibility="None" HeadersVisibility="Column">
             <DataGrid.Columns>
@@ -452,7 +380,7 @@
           </DataGrid>
 
           <!-- Recent Activity: every run, newest first. Selecting one shows its task in the preview. -->
-          <DataGrid Grid.Row="1" Grid.RowSpan="2" Classes="tasks" ItemsSource="{Binding Activity}" SelectedItem="{Binding SelectedActivity}"
+          <DataGrid Grid.Row="2" Classes="tasks" ItemsSource="{Binding Activity}" SelectedItem="{Binding SelectedActivity}"
                     IsVisible="{Binding ShowActivity}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
                     CanUserResizeColumns="True" CanUserReorderColumns="True" CanUserSortColumns="False" GridLinesVisibility="None" HeadersVisibility="Column">
             <DataGrid.Columns>
@@ -766,5 +694,96 @@
       </Border>
     </Grid>
     <!-- The editor takes the place of the sidebar, list and preview while it's open. -->
-    <views:EditorView Grid.Row="2" Margin="16,0,16,16" DataContext="{Binding Editor}" IsVisible="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).IsEditing}" />  </Grid>
+    <views:EditorView Grid.Row="2" Margin="16,0,16,16" DataContext="{Binding Editor}" IsVisible="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).IsEditing}" />
+    <!-- Computers: a panel dropped from the computer's name, over the page. Clicking outside or
+         Escape closes it. -->
+    <Grid Grid.Row="1" Grid.RowSpan="2" ZIndex="10" IsVisible="{Binding ShowComputers}">
+      <Border Name="ComputersScrim" Background="{DynamicResource Scrim}" PointerPressed="OnComputersScrimPressed" />
+      <Border Classes="popover" Width="460" Margin="16,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+        <StackPanel DataContext="{Binding Computers}" x:DataType="vm:ComputersViewModel">
+          <Grid ColumnDefinitions="*,Auto" Margin="16,12,10,6">
+            <TextBlock Text="Switch Computer" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="chipRemove" Padding="6" AutomationProperties.Name="Close"
+                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).ToggleComputersCommand}">
+              <ic:FluentIcon Icon="Dismiss" FontSize="12" />
+            </Button>
+          </Grid>
+
+          <!-- Each computer is one row: click it to open. The one showing is tinted and ticked. -->
+          <ItemsControl ItemsSource="{Binding Rows}" Margin="8,0">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ComputerRow">
+                <Grid Margin="0,1">
+                  <Button Classes="pickRow" IsVisible="{Binding CanConnect}" AutomationProperties.Name="{Binding Title}"
+                          Command="{Binding $parent[ItemsControl].((vm:ComputersViewModel)DataContext).ConnectToCommand}"
+                          CommandParameter="{Binding}" />
+                  <Border Classes="pickRowCurrent" IsVisible="{Binding IsCurrent}" />
+                  <Grid ColumnDefinitions="Auto,*,26" ColumnSpacing="10" Margin="10,7,8,7" IsHitTestVisible="False">
+                    <ic:FluentIcon Icon="Desktop" FontSize="18" VerticalAlignment="Center" IsVisible="{Binding IsThisComputer}"
+                                   Foreground="{DynamicResource TextMuted}" />
+                    <ic:FluentIcon Icon="Server" FontSize="18" VerticalAlignment="Center" IsVisible="{Binding !IsThisComputer}"
+                                   Foreground="{DynamicResource TextMuted}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                      <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <ic:FluentIcon Icon="Key" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextMuted}"
+                                       IsVisible="{Binding HasSavedPassword}" />
+                        <TextBlock Classes="muted" FontSize="12" Text="{Binding Detail}" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </StackPanel>
+                    <ic:FluentIcon Grid.Column="2" Icon="Checkmark" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Accent}" IsVisible="{Binding IsCurrent}" />
+                  </Grid>
+                  <Button Classes="chipRemove" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,9,0" Padding="5"
+                          IsVisible="{Binding CanForget}" AutomationProperties.Name="Forget this computer"
+                          Command="{Binding $parent[ItemsControl].((vm:ComputersViewModel)DataContext).ForgetCommand}"
+                          CommandParameter="{Binding}">
+                    <ic:FluentIcon Icon="Dismiss" FontSize="11" Foreground="{DynamicResource TextMuted}" />
+                  </Button>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <Border Height="1" Background="{DynamicResource Divider}" Margin="0,8,0,0" />
+
+          <!-- Another computer: its name and Connect on one line; another account only when asked. -->
+          <StackPanel Margin="16,12,16,14" Spacing="8">
+            <TextBlock Classes="fieldLabel" Text="Connect to Another Computer" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsEnabled="{Binding IsIdle}">
+              <TextBox Text="{Binding Name}" Watermark="Computer name or IP address" />
+              <Button Grid.Column="1" Classes="primary" Content="Connect" Command="{Binding ConnectCommand}" IsDefault="True" />
+            </Grid>
+            <CheckBox IsChecked="{Binding UseOtherAccount}" IsEnabled="{Binding IsIdle}" Content="Sign in as another account" />
+            <StackPanel Spacing="6" Margin="28,0,0,0" IsVisible="{Binding UseOtherAccount}" IsEnabled="{Binding IsIdle}">
+              <TextBox Text="{Binding Account}" Watermark="Account, such as DOMAIN
+ame or .
+ame" />
+              <TextBox Text="{Binding Password}" PasswordChar="•" Watermark="Password" />
+              <CheckBox IsChecked="{Binding RememberPassword}" Content="Remember the password on this PC" />
+            </StackPanel>
+            <TextBlock Classes="muted" FontSize="12" Text="{Binding ConnectHint}"
+                       IsVisible="{Binding ConnectHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" IsVisible="{Binding IsConnecting}">
+              <ProgressBar IsIndeterminate="True" Width="80" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{Binding ConnectingText}" TextTrimming="CharacterEllipsis" />
+              <Button Grid.Column="2" Classes="neutral small" Content="Stop" Command="{Binding CancelConnectCommand}" />
+            </Grid>
+            <Border Classes="banner error" IsVisible="{Binding HasProblem}">
+              <c:ErrorText Text="{Binding Problem}" />
+            </Border>
+            <Border Classes="banner info" IsVisible="{Binding HasNote}">
+              <TextBlock Text="{Binding Note}" TextWrapping="Wrap" />
+            </Border>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <ic:FluentIcon Icon="Info" FontSize="12" VerticalAlignment="Top" Margin="0,2,0,0" Foreground="{DynamicResource TextMuted}" />
+              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Width="400"
+                         Text="Needs an administrator account on that computer. A remembered password stays in Windows Credential Manager on this PC only." />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+  </Grid>
 </UserControl>

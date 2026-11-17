@@ -40,6 +40,30 @@ public partial class MainView : UserControl
 
     void OnWindowClosing(object? sender, WindowClosingEventArgs e) => SaveColumns();
 
+    // The computer picker floats over the page: a click on the dimmed page, or Escape, closes it.
+    void OnComputersScrimPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        CloseComputers();
+        e.Handled = true;
+    }
+
+    protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key == Avalonia.Input.Key.Escape && DataContext is ViewModels.MainViewModel { ShowComputers: true })
+        {
+            CloseComputers();
+            e.Handled = true;
+            return;
+        }
+        base.OnKeyDown(e);
+    }
+
+    void CloseComputers()
+    {
+        if (DataContext is ViewModels.MainViewModel { ShowComputers: true } vm)
+            vm.ShowComputers = false;
+    }
+
     void RestoreColumns()
     {
         if (ColumnLayoutFile is not { } file || !File.Exists(file))

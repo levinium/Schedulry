@@ -19,18 +19,20 @@ public sealed partial class ImportViewModel : ObservableObject
         FileName = fileName;
         Xml = xml;
         Name = Path.GetFileNameWithoutExtension(fileName);
+        FolderPicker = new FolderPicker(shell.Host.Folders(), folder);
+        FolderPicker.Changed += () => Folder = FolderPicker.Path;
         Folder = folder;
-        Folders = shell.Host.Folders();
         NeedsPassword = Regex.IsMatch(xml, @"<LogonType>\s*(Password|InteractiveTokenOrPassword)\s*</LogonType>");
     }
 
     public string FileName { get; }
     public string Xml { get; }
-    public IReadOnlyList<string> Folders { get; }
+    public FolderPicker FolderPicker { get; }
     public bool NeedsPassword { get; }
 
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ImportCommand))] public partial string Name { get; set; }
     [ObservableProperty] public partial string Folder { get; set; }
+    partial void OnFolderChanged(string value) => FolderPicker.Set(value);
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ImportCommand))] public partial string Password { get; set; } = "";
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ImportCommand))] public partial bool Busy { get; private set; }
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(HasProblem))] public partial string? Problem { get; private set; }

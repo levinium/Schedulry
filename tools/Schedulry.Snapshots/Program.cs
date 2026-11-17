@@ -77,6 +77,17 @@ foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         vm.Editor!.Tab = Schedulry.ViewModels.Editor.ReviewTab.PowerShell;
     });
 
+    // A new task going into a new folder inside an existing one.
+    Render($"editor-new-folder-{suffix}", new DemoSchedulerHost(() => moment, elevated: true), vm =>
+    {
+        vm.NewTaskCommand.Execute(null);
+        var picker = vm.Editor!.FolderPicker;
+        picker.Selected = picker.Choices.First(c => c.Path == @"\Maintenance");
+        picker.StartNewFolderCommand.Execute(null);
+        picker.NewName = "Nightly";
+        vm.Editor.Name = "Compact the database";
+    });
+
     // A computer that can't be reached: the message can be selected and copied.
     Render($"connect-error-{suffix}", new DemoSchedulerHost(() => moment), vm =>
     {
