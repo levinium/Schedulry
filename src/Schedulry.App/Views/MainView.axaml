@@ -10,7 +10,7 @@
 
   <Grid RowDefinitions="Auto,Auto,*">
 
-    <!-- Top bar: name, computer, live state; new task, import, settings. Search and sort sit on the table. -->
+    <!-- Top bar: name, computer, live state, settings. Making tasks starts the sidebar; search and sort sit on the table. -->
     <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" Margin="16,12,16,10" ColumnSpacing="14">
       <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
         <Image Source="/Assets/schedulry-256.png" Width="30" Height="30" />
@@ -37,13 +37,6 @@
 
 
       <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-        <Button Classes="primary" Command="{Binding NewTaskCommand}" IsEnabled="{Binding IsBrowsing}">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <ic:FluentIcon Icon="Add" FontSize="14" />
-            <TextBlock Text="New Task" />
-          </StackPanel>
-        </Button>
-        <Button Classes="neutral" Content="Import…" Command="{Binding ImportTaskCommand}" IsEnabled="{Binding IsBrowsing}" />
         <!-- Settings: the gear alone. -->
         <Button Classes="neutral" Padding="9,8" Command="{Binding ToggleSettingsCommand}" AutomationProperties.Name="Settings">
           <ic:FluentIcon Icon="Settings" FontSize="16" />
@@ -173,6 +166,24 @@
       <Border Classes="card" Background="{DynamicResource SidebarBg}">
         <ScrollViewer>
           <StackPanel Margin="0,0,0,10">
+            <!-- Making a task starts the sidebar, above the lists it lands in. -->
+            <StackPanel Spacing="6" Margin="10,10,10,4">
+              <Button Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      Command="{Binding NewTaskCommand}" IsEnabled="{Binding IsBrowsing}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <ic:FluentIcon Icon="Add" FontSize="14" />
+                  <TextBlock Text="New Task" />
+                </StackPanel>
+              </Button>
+              <Button Classes="neutral" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      Background="{DynamicResource CardBg}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                      Command="{Binding ImportTaskCommand}" IsEnabled="{Binding IsBrowsing}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <ic:FluentIcon Icon="ArrowImport" FontSize="14" />
+                  <TextBlock Text="Import…" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
             <!-- Windows' own tasks change every list and count, so the switch sits above them. -->
             <ToggleSwitch IsChecked="{Binding ShowWindowsTasks}" OnContent="Windows tasks" OffContent="Windows tasks" Margin="14,8,12,0" />
             <TextBlock Classes="section" Text="STATUS" />
