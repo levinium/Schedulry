@@ -6,15 +6,17 @@ using Velopack.Sources;
 namespace Schedulry.App;
 
 /// <summary>
-/// Looks for a newer release on GitHub when the app opens, every few hours, and when asked (Check
+/// Looks for a newer release when the app opens, every few hours, and when asked (Check
 /// for Updates in Settings); downloads it in the background and offers a restart (<see cref="AppUpdate"/>).
 /// Without one, a downloaded update installs the next time the app starts (Velopack does that on
 /// its own), such as at sign-in. Only installed copies update: a development build does nothing.
-/// Releases are pre-releases while the builds are unsigned, so pre-releases are included.
 /// </summary>
 public static class UpdateChecker
 {
     const string Repository = "https://github.com/levinium/Schedulry";
+
+    /// <summary>The release lists, copied here by the Packages workflow (see <see cref="ReleaseFeedSource"/>).</summary>
+    const string Feed = "https://raw.githubusercontent.com/levinium/Schedulry/updates/";
 
     static readonly TimeSpan Every = TimeSpan.FromHours(4);
 
@@ -31,7 +33,7 @@ public static class UpdateChecker
         var number = version is null ? "" : $"{version.Major}.{version.Minor}.{version.Build}";
         try
         {
-            _manager = new UpdateManager(new GithubSource(Repository, null, true));
+            _manager = new UpdateManager(new ReleaseFeedSource(Repository, Feed));
             if (!_manager.IsInstalled)
             {
                 AppUpdate.Current.VersionText = $"Version {number}, a development build: it doesn't update itself.";

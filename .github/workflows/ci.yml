@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    # Not the updates branch: it holds only the update lists (see release.yml).
+    branches-ignore: [updates]
   pull_request:
     branches: [main]
   workflow_dispatch:
