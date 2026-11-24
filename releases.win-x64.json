@@ -1,1 +1,40 @@
-{"Assets":[{"PackageId":"Schedulry","Version":"0.1.5","Type":"Full","FileName":"Schedulry-0.1.5-win-x64-full.nupkg","SHA1":"EA067289B5B3D2EF012544191FD1F8BC3F092D2D","SHA256":"5B3992C9FA4DD266192B567C8630CE9310DAACCA8424E82B054DAB805A5F3BDA","Size":63150326},{"PackageId":"Schedulry","Version":"0.1.5","Type":"Delta","FileName":"Schedulry-0.1.5-win-x64-delta.nupkg","SHA1":"F354B0861B138C7E9D87C0E35E1C94B251602E41","SHA256":"C08DA188AC14566F9077A03AF916D820B081AD49D8882906F27F26CE69578228","Size":203354}]}
+{
+  "Assets": [
+    {
+      "PackageId": "Schedulry",
+      "Version": "0.1.5",
+      "Type": "Delta",
+      "FileName": "Schedulry-0.1.5-win-x64-delta.nupkg",
+      "SHA1": "F354B0861B138C7E9D87C0E35E1C94B251602E41",
+      "SHA256": "C08DA188AC14566F9077A03AF916D820B081AD49D8882906F27F26CE69578228",
+      "Size": 203354
+    },
+    {
+      "PackageId": "Schedulry",
+      "Version": "0.1.6",
+      "Type": "Full",
+      "FileName": "Schedulry-0.1.6-win-x64-full.nupkg",
+      "SHA1": "487B21E5A8F415CA651B19B448E594E058D1C465",
+      "SHA256": "78BD9F32254B5E038AFD2487F8C1D99834A453DF77269087C41EC15E07908545",
+      "Size": 63224753
+    },
+    {
+      "PackageId": "Schedulry",
+      "Version": "0.1.6",
+      "Type": "Delta",
+      "FileName": "Schedulry-0.1.6-win-x64-delta.nupkg",
+      "SHA1": "2E50CC0606B4F16E4A4D2D9369299166C8D1A64E",
+      "SHA256": "342620BAE52D8EB5FEF42C4BCEE778F7A856CD10F3EE002459581131558935E6",
+      "Size": 4269811
+    },
+    {
+      "PackageId": "Schedulry",
+      "Version": "0.1.5",
+      "Type": "Full",
+      "FileName": "Schedulry-0.1.5-win-x64-full.nupkg",
+      "SHA1": "EA067289B5B3D2EF012544191FD1F8BC3F092D2D",
+      "SHA256": "5B3992C9FA4DD266192B567C8630CE9310DAACCA8424E82B054DAB805A5F3BDA",
+      "Size": 63150326
+    }
+  ]
+}
